@@ -1,51 +1,12 @@
-import heapq
 import os
 import pickle
 import pygame
-import core
 import xml.dom.minidom
-from peachy import AssetManager, graphics
+import peachy.graphics
+from pygame.locals import *
 
 
-def a_star_search(grid, start, goal):
-    frontier = PriorityQueue()
-    frontier.put(start, 0)
-    came_from = {}
-    cost_so_far = {}
-    came_from[start] = None
-    cost_so_far[start] = 0
-
-    while not frontier.empty():
-        current = frontier.get()
-
-        if current == goal:
-            break
-
-        for neighbour in grid.neighbours(current):
-            new_cost = cost_so_far[current] + grid.cost(current, neighbour)
-            if neighbour not in cost_so_far or new_cost < cost_so_far[neighbour]:
-                cost_so_far[neighbour] = new_cost
-                priority = new_cost + a_star_heuristic(goal, neighbour)
-                frontier.put(neighbour, priority)
-                came_from[neighbour] = current
-
-    # return came_from, cost_so_far
-    current = goal
-    path = [current]
-    while current != start:
-        current = came_from[current]
-        path.append(current)
-    path.reverse()
-    return path
-
-
-def a_star_heuristic(a, b):
-    x1, y1 = a
-    x2, y2 = b
-    return abs(x1 - x2) + abs(y1 - y2)
-
-
-def save(data, file_name):
+def save_data(data, file_name):
     _file = None
     try:
         _file = open(file_name, 'wb')
@@ -57,7 +18,7 @@ def save(data, file_name):
         raise
 
 
-def load(file_name):
+def load_data(file_name):
     _file = None
     saved_data = None
     try:
@@ -103,12 +64,79 @@ def hex_to_rgb(val):
 
 def open_xml(path):
     try:
-        xml_file = open(os.path.join(AssetManager.assets_path, path), 'r')
+        xml_file = open(path, 'r')
         data = xml_file.read()
         xml_file.close()
         return xml.dom.minidom.parseString(data)
     except IOError:
         print '[ERROR] could not load xml file: ' + path
+
+
+class Assets(object):
+    """
+    An asset management helper class
+    """
+
+    stored_fonts = dict()
+    stored_images = dict()
+    stored_sounds = dict()
+
+    @classmethod
+    def get_font(cls, asset_name):
+        return cls.stored_fonts.get(asset_name)
+
+    @classmethod
+    def get_image(cls, asset_name):
+        return cls.stored_images.get(asset_name)
+
+    @classmethod
+    def get_sound(cls, asset_name):
+        return cls.stored_sounds.get(asset_name)
+
+    @classmethod
+    def store_font(cls, asset_name, path, point_size):
+        """Retrieves a font from the HDD"""
+
+        path = path.lstrip('../')  # cannot rise outside of asset_path
+
+        try:
+            font = pygame.font.Font(path, point_size)
+            cls.stored_fonts[asset_name] = font
+            return font
+        except IOError:
+            # TODO incorporate default font
+            print '[ERROR] could not find Font: ' + path
+            return None
+
+    @classmethod
+    def store_image(cls, asset_name, path):
+        """Retrieves an image from the HDD"""
+
+        path = path.lstrip('../')  # cannot rise outside of asset_path
+
+        try:
+            image = pygame.image.load(path)
+            image.convert_alpha()
+            cls.stored_images[asset_name] = image
+            return image
+        except IOError:
+            print '[ERROR] could not find Image: ' + path
+            return None
+
+    @classmethod
+    def store_sound(cls, asset_name, path):
+        """Retrieves a sound file from the HDD"""
+        # TODO add linux support
+
+        path = path.lstrip('../')  # cannot rise outside of asset_path
+
+        try:
+            sound = pygame.mixer.Sound(path)
+            cls.stored_sounds[asset_name] = sound
+            return sound
+        except IOError:
+            print '[ERROR] could not find Sound: ' + path
+            return None
 
 
 class Camera(object):
@@ -197,63 +225,170 @@ class Camera(object):
         graphics.translate(self.x, self.y)
 
 
-class Music(object):
+class Input(object):
 
-    def __init__(self, source):
-        self.source = source
-        self.loaded = False
-        self.paused = False
-        self.playing = False
+    curr_key_state = []
+    prev_key_state = []
 
-    def load(self):
-        pygame.mixer.music.load(self.source)
-        self.loaded = True
-        self.paused = False
-        self.playing = False
+    @staticmethod
+    def init():
+        Input.curr_key_state = pygame.key.get_pressed()
+        Input.prev_key_state = pygame.key.get_pressed()
 
-    def pause(self):
-        if not self.loaded:
-            return
-        pygame.mixer.music.pause()
-        self.paused = True
-        self.playing = False
+    @staticmethod
+    def down(key):
+        code = Input.get_key_code(key)
+        if code != -1:
+            return Input.curr_key_state[code]
+        return False
 
-    def play(self):
-        if not self.loaded:
-            return
-        pygame.mixer.music.play()
-        self.paused = False
-        self.playing = True
-
-    def resume(self):
-        if not self.loaded:
-            return
-        pygame.mixer.music.unpause()
-        self.paused = False
-        self.playing = True
-
-    def stop(self):
-        if not self.loaded:
-            return
-        pygame.mixer.music.stop()
-        self.paused = False
-        self.playing = False
-
-
-class PriorityQueue(object):
-    # TODO ... This has something to do with A* but I don't know what. I want to remove it.
+    @staticmethod
+    def pressed(key):
+        if key == 'any':
+            for code in xrange(len(Input.curr_key_state)):
+                if Input.curr_key_state[code] and not Input.prev_key_state[code]:
+                    return True
+            return False
+        else:
+            code = Input.get_key_code(key)
+            if code != -1:
+                return Input.curr_key_state[code] and not Input.prev_key_state[code]
+            return False
     
-    def __init__(self):
-        self.elements = []
+    @staticmethod
+    def released(key):
+        code = Input.get_key_code(key)
+        if code != -1:
+            return not Input.curr_key_state[code] and Input.prev_key_state[code]
+        return False
 
-    def empty(self):
-        return len(self.elements) == 0
+    @staticmethod
+    def poll_keyboard():
+        Input.prev_key_state = Input.curr_key_state
+        Input.curr_key_state = pygame.key.get_pressed()
+    
+    @staticmethod
+    def get_key_code(key):
+        if key == 'enter': 
+            return K_RETURN
+        elif key == 'escape': 
+            return K_ESCAPE
+        elif key == 'lshift': 
+            return K_LSHIFT
+        elif key == 'rshift': 
+            return K_RSHIFT
+        elif key == 'space': 
+            return K_SPACE
+        elif key == 'left': 
+            return K_LEFT
+        elif key == 'right': 
+            return K_RIGHT
+        elif key == 'up': 
+            return K_UP
+        elif key == 'down': 
+            return K_DOWN
 
-    def put(self, item, priority):
-        heapq.heappush(self.elements, (priority, item))
+        elif key == '1':
+            return K_1;
+        elif key == '2':
+            return K_2;
+        elif key == '3':
+            return K_3;
+        elif key == '4':
+            return K_4;
+        elif key == '5':
+            return K_5;
+        elif key == '6':
+            return K_6;
+        elif key == '7':
+            return K_7;
+        elif key == '8':
+            return K_8;
+        elif key == '9':
+            return K_9;
+        elif key == '0':
+            return K_0;
 
-    def get(self):
-        return heapq.heappop(self.elements)[1]
+        elif key == 'F1':
+            return K_F1;
+        elif key == 'F2':
+            return K_F2;
+        elif key == 'F3':
+            return K_F3;
+        elif key == 'F4':
+            return K_F4;
+        elif key == 'F5':
+            return K_F5;
+        elif key == 'F6':
+            return K_F6;
+        elif key == 'F7':
+            return K_F7;
+        elif key == 'F8':
+            return K_F8;
+        elif key == 'F9':
+            return K_F9;
+        elif key == 'F10':
+            return K_F10;
+        elif key == 'F11':
+            return K_F11;
+        elif key == 'F12':
+            return K_F12;
+
+        elif key == 'a':
+            return K_a
+        elif key == 'b':
+            return K_b
+        elif key == 'c':
+            return K_c
+        elif key == 'd':
+            return K_d
+        elif key == 'e':
+            return K_e
+        elif key == 'f':
+            return K_f
+        elif key == 'g':
+            return K_g
+        elif key == 'h':
+            return K_h
+        elif key == 'i':
+            return K_i
+        elif key == 'j':
+            return K_j
+        elif key == 'k':
+            return K_k
+        elif key == 'l':
+            return K_l
+        elif key == 'm':
+            return K_m
+        elif key == 'n':
+            return K_n
+        elif key == 'o':
+            return K_o
+        elif key == 'p':
+            return K_p
+        elif key == 'q':
+            return K_q
+        elif key == 'r':
+            return K_r
+        elif key == 's':
+            return K_s
+        elif key == 't':
+            return K_t
+        elif key == 'u':
+            return K_u
+        elif key == 'v':
+            return K_v
+        elif key == 'w':
+            return K_w
+        elif key == 'x':
+            return K_x
+        elif key == 'y':
+            return K_y
+        elif key == 'z':
+            return K_z
+        else:
+            return -1
+
 
 
 class SoundEffect(object):
@@ -308,30 +443,32 @@ class Stage(object):
         del self.objects[:]
         self.properties.clear()
 
-    def load_tiled(self, path):
+    @staticmethod
+    def load_tiled(path):
         xml = open_xml(path)
         stage_raw = xml.getElementsByTagName('map')[0]
 
         # Load base attributes
+        stage = Stage()
 
-        self.tile_width = int(stage_raw.getAttribute('tilewidth'))
-        self.tile_height = int(stage_raw.getAttribute('tileheight'))
-        self.width = int(stage_raw.getAttribute('width')) * self.tile_width
-        self.height = int(stage_raw.getAttribute('height')) * self.tile_height
-        self.path = path
+        stage.tile_width = int(stage_raw.getAttribute('tilewidth'))
+        stage.tile_height = int(stage_raw.getAttribute('tileheight'))
+        stage.width = int(stage_raw.getAttribute('width')) * stage.tile_width
+        stage.height = int(stage_raw.getAttribute('height')) * stage.tile_height
+        stage.path = path
 
         map_properties = xml.getElementsByTagName('properties')
         if map_properties:
             for prop in map_properties[0].getElementsByTagName('property'):
                 property_name = prop.getAttribute('name')
                 property_value = prop.getAttribute('value')
-                self.properties[property_name] = property_value
+                stage.properties[property_name] = property_value
 
         # Load tilesets
 
         for tileset_raw in stage_raw.getElementsByTagName('tileset'):
 
-            tileset = self._Tileset()
+            tileset = stage._Tileset()
             tileset.name = tileset_raw.getAttribute('name')
             tileset.firstGID = int(tileset_raw.getAttribute('firstgid'))
             tileset.tilewidth = int(tileset_raw.getAttribute('tilewidth'))
@@ -343,7 +480,7 @@ class Stage(object):
                 source = image_raw.getAttribute('source')
                 tileset.image = AssetManager.load_image(tileset.name, source)
 
-            self.tileset_images += splice_image(tileset.image,
+            stage.tileset_images += splice_image(tileset.image,
                                                 tileset.tilewidth,
                                                 tileset.tileheight)
 
@@ -353,16 +490,16 @@ class Stage(object):
                 property_value = prop.getAttribute('value')
                 tileset.properties[property_name] = property_value
 
-            self.tilesets.append(tileset)
+            stage.tilesets.append(tileset)
 
         # Load layers and tiles
 
         for layer_raw in stage_raw.getElementsByTagName('layer'):
 
-            layer = self._Layer()
+            layer = stage._Layer()
             layer.name = layer_raw.getAttribute('name')
-            layer.width = int(layer_raw.getAttribute('width')) * self.tile_width
-            layer.height = int(layer_raw.getAttribute('height')) * self.tile_height
+            layer.width = int(layer_raw.getAttribute('width')) * stage.tile_width
+            layer.height = int(layer_raw.getAttribute('height')) * stage.tile_height
 
             tile_x = 0
             tile_y = 0
@@ -371,16 +508,16 @@ class Stage(object):
                 tile_id = int(tile_raw.getAttribute('gid'))
 
                 if tile_id > 0:
-                    tile = self._Tile()
+                    tile = stage._Tile()
                     tile.x = tile_x
                     tile.y = tile_y
                     tile.gid = tile_id
                     layer.tiles.append(tile)
 
-                tile_x += self.tile_width
+                tile_x += stage.tile_width
                 if tile_x == layer.width:
                     tile_x = 0
-                    tile_y += self.tile_height
+                    tile_y += stage.tile_height
 
             properties = layer_raw.getElementsByTagName('property')
             for prop in properties:
@@ -388,7 +525,7 @@ class Stage(object):
                 property_value = prop.getAttribute('value')
                 layer.properties[property_name] = property_value
 
-            self.layers.append(layer)
+            stage.layers.append(layer)
 
         # Load objects
 
@@ -398,7 +535,7 @@ class Stage(object):
 
             for object_raw in object_group.getElementsByTagName('object'):
 
-                obj = self._Object()
+                obj = stage._Object()
                 obj.group = group
                 obj.name = object_raw.getAttribute('name')
                 obj.x = int(object_raw.getAttribute('x'))
@@ -408,16 +545,19 @@ class Stage(object):
                 polyline = object_raw.getElementsByTagName('polyline')
                 if polygon:
                     obj.is_polygon = True
-                    obj.polygon_points = self.parse_tiled_polygon(polygon)
+                    obj.polygon_points = stage.parse_tiled_polygon(polygon)
                 elif polyline:
                     obj.is_polygon = True
-                    obj.polygon_points = self.parse_tiled_polygon(polyline)
+                    obj.polygon_points = stage.parse_tiled_polygon(polyline)
                 else:
                     try:
                         obj.w = int(object_raw.getAttribute('width'))
-                        obj.h = int(object_raw.getAttribute('height'))
                     except ValueError:
                         obj.w = 0
+
+                    try:
+                        obj.h = int(object_raw.getAttribute('height'))
+                    except ValueError:
                         obj.h = 0
 
 
@@ -427,9 +567,11 @@ class Stage(object):
                     property_value = prop.getAttribute('value')
                     obj.properties[property_name] = property_value
 
-                self.objects.append(obj)
+                stage.objects.append(obj)
 
-    def parse_tiled_polygon(self, polygon):
+        return stage
+
+    def parse_tiled_polygon(stage, polygon):
         points = []
         points_raw = polygon[0].getAttribute('points').split()
         for raw_point in points_raw:

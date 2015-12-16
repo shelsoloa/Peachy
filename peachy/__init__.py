@@ -4,12 +4,12 @@ import pygame
 import sys
 from pygame.locals import *
 
-import inpt
 import graphics
+from utils import Input
 
 if __debug__:
     def debug_draw_grid(cell_width, cell_height, offset_x=0, offset_y=0):
-        view_width, view_height = pc.view_size
+        view_width, view_height = PC.view_size
         
         x = offset_x
         y = offset_y
@@ -23,13 +23,13 @@ if __debug__:
             y += cell_height
 
 """
-pc (Peachy Controller)
+PC (Peachy Controller)
 
 This is the central controlling class for the Peachy framework. This class
 controls the window, world, and entity room.
 
 """
-class pc(object):
+class PC(object):
     
     _window_surface = None
     _render_surface = None
@@ -43,7 +43,7 @@ class pc(object):
     view_size = (0, 0)
     window_size = (0, 0)
 
-    entity_room = None
+    room = None
     world = None
 
     DEBUG = False
@@ -56,7 +56,7 @@ class pc(object):
         try:
             pygame.display.init()
             pygame.font.init()
-            pygame.joystick.init()
+            # pygame.joystick.init()
             pygame.mixer.init(44100, 16, 2, 512)
         except Exception:
             if pygame.display.get_init() is None or \
@@ -77,48 +77,49 @@ class pc(object):
         '''
 
         # General initialization
-        pc._title = title
-        pc._scale = scale
+        PC._title = title
+        PC._scale = scale
 
         # Init joysticks
         # TODO Fix joystick functionality
-        joystick_count = pygame.joystick.get_count()
-        for i in range(joystick_count):
-            Input.joystick_raw.append(pygame.joystick.Joystick(i))
-            Input.joystick_raw[i].init()
-            Input.joystick.append({
-                'AXIS': [], 
-                'BUTTON': [] 
-            })
+        # joystick_count = pygame.joystick.get_count()
+        # for i in range(joystick_count):
+        #     Input.joystick_raw.append(pygame.joystick.Joystick(i))
+        #     Input.joystick_raw[i].init()
+        #     Input.joystick.append({
+        #         'AXIS': [], 
+        #         'BUTTON': [] 
+        #     })
 
-        # Init display
+        # Init pygame display
         pygame.display.set_caption(title)
 
-        pc.view_size = view_size
-        pc.window_size = (view_size[0] * scale, view_size[1] * scale)
+        PC.view_size = view_size
+        PC.window_size = (view_size[0] * scale, view_size[1] * scale)
         
-        pc._window_surface = pygame.display.set_mode(pc.window_size)
-        pc._render_surface = pygame.Surface(pc.view_size)
+        PC._window_surface = pygame.display.set_mode(PC.window_size)
+        PC._render_surface = pygame.Surface(PC.view_size)
 
-        graphics._MAIN_CONTEXT = pc._render_surface
-        graphics.set_context(pc._render_surface)
+        graphics._MAIN_CONTEXT = PC._render_surface
+        graphics.set_context(PC._render_surface)
         
-        # Init base game objects, these should be overriden before use
-        pc.entity_room = EntityRoom()
-        pc.world = World()
+        # Init peachy
+        Input.init()
+        PC.room = EntityRoom()
+        PC.world = World()
 
         if fps > 0:
-            pc._frames_per_second = fps
+            PC._frames_per_second = fps
 
         # Init debug
         if debug:
-            pc.DEBUG = debug
+            PC.DEBUG = debug
             print platform.system()
 
     @staticmethod
     def run():
         game_timer = pygame.time.Clock()
-        inpt.poll_keyboard()
+        Input.poll_keyboard()
 
         running = True
 
@@ -130,40 +131,40 @@ class pc(object):
                     if event.type == QUIT:
                         running = False
                         break
-                    elif event.type == KEYDOWN or event.type == KEYUP:
-                        inpt.poll_keyboard()
-                    elif event.type == MOUSEMOTION or \
-                         event.type == MOUSEBUTTONUP or \
-                         event.type == MOUSEBUTTONDOWN:
-                        inpt.poll_mouse()
+                    #elif event.type == MOUSEMOTION or \
+                    #     event.type == MOUSEBUTTONUP or \
+                    #     event.type == MOUSEBUTTONDOWN:
+                    #    Input.poll_mouse()
+                utils.Input.poll_keyboard()
+
 
                 # Update
-                pc.world.update()
+                PC.world.update()
 
                 # Render - Draw World
-                pc._render_surface.fill(pc.background_color)
-                pc.world.render()
+                PC._render_surface.fill(PC.background_color)
+                PC.world.render()
 
                 # Render - Transformations
                 # TODO speed up scaling somehow
-                render_size = pc.window_size
-                pygame.transform.scale(pc._render_surface, render_size, pc._window_surface)
+                render_size = PC.window_size
+                pygame.transform.scale(PC._render_surface, render_size, PC._window_surface)
 
                 # Render - Finalize
                 pygame.display.flip()
 
                 # Maintain fps
-                game_timer.tick(pc._frames_per_second)
-                if pc.DEBUG:
+                game_timer.tick(PC._frames_per_second)
+                if PC.DEBUG:
                     fps = round(game_timer.get_fps())
-                    pygame.display.set_caption(pc._title + ' {' + str(fps) + '}')
+                    pygame.display.set_caption(PC._title + ' {' + str(fps) + '}')
             
-            pc.world.exit()
+            PC.world.exit()
             pygame.quit()
 
         except:
             import traceback
-            print "[ERROR] Unexpected error. Over Yonder will now shutdown."
+            print "[ERROR] Unexpected error. {0} shutting down.".format(PC._title)
             traceback.print_exc()
             sys.exit()
 
@@ -181,22 +182,22 @@ class pc(object):
         if flags^FULLSCREEN:
             monitor_info = pygame.display.Info()
 
-            ratio = min(float(monitor_info.current_w) / float(pc.view_size[0]),
-                        float(monitor_info.current_h) / float(pc.view_size[1]))
+            ratio = min(float(monitor_info.current_w) / float(PC.view_size[0]),
+                        float(monitor_info.current_h) / float(PC.view_size[1]))
 
-            window_width = int(pc.view_size[0] * ratio)
-            window_height = int(pc.view_size[1] * ratio)
+            window_width = int(PC.view_size[0] * ratio)
+            window_height = int(pls.view_size[1] * ratio)
             
-            pc.window_size = (window_width, window_height)
+            PC.window_size = (window_width, window_height)
         else:
-            pc.window_size = (pc.view_size[0] * pc._scale, pc.view_size[1] * pc._scale)
+            PC.window_size = (PC.view_size[0] * PC._scale, PC.view_size[1] * PC._scale)
         pygame.display.set_caption(*caption)
 
-        pc._window_surface = pygame.display.set_mode(pc.window_size, flags^FULLSCREEN, bits)
-        pc._render_surface = pygame.Surface(pc.view_size)
+        PC._window_surface = pygame.display.set_mode(PC.window_size, flags^FULLSCREEN, bits)
+        PC._render_surface = pygame.Surface(PC.view_size)
 
-        graphics._MAIN_CONTEXT = pc._render_surface
-        graphics.set_context(pc._render_surface)
+        graphics._MAIN_CONTEXT = PC._render_surface
+        graphics.set_context(PC._render_surface)
 
     @staticmethod
     def quit():
@@ -230,7 +231,7 @@ class Entity(object):
 
     def destroy(self):
         self.active = False
-        pc.entity_room.remove(self)
+        PC.room.remove(self)
 
     # TODO change to validate_coordinates(self, x, y)
     def _check_bounds(self, x, y):
@@ -255,17 +256,24 @@ class Entity(object):
         top_b = e.y
         bottom_b = e.y + e.height
         
-        if (bottom_a <= top_b or top_a >= bottom_b or
-                right_a <= left_b or left_a >= right_b):
-            return False
-        else:
+        if left_a < right_b and \
+           right_a > left_b and \
+           top_a < bottom_b and \
+           bottom_a > top_b:
             return True
+        else:
+            return False
+        #if bottom_a <= top_b or top_a >= bottom_b or \
+        #   right_a <= left_b or left_a >= right_b:
+        #    return False
+        #else:
+        #    return True
 
     def collides_group(self, group, x=None, y=None):
         x, y = self._check_bounds(x, y)
 
         collisions = []
-        for entity in pc.entity_room.entities:
+        for entity in PC.room.entities:
             if entity == self or not entity.active:
                 continue
             elif entity.group == group and self.collides(entity, x, y):
@@ -277,7 +285,7 @@ class Entity(object):
         x, y = self._check_bounds(x, y)
 
         collisions = []
-        for entity in pc.entity_room.entities:
+        for entity in PC.room.entities:
             if entity == self or not entity.active:
                 continue
             elif entity.group in groups and self.collides(entity, x, y):
@@ -287,7 +295,7 @@ class Entity(object):
     def collides_name(self, name, x=None, y=None):
         x, y = self._check_bounds(x, y)
 
-        for entity in pc.entity_room.entities:
+        for entity in PC.room.entities:
             if entity.name == name and self.collides(entity, x, y):
                 return entity
         return None
@@ -326,7 +334,7 @@ class Entity(object):
         x, y = self._check_bounds(x, y)
 
         collisions = []
-        for entity in pc.entity_room.entities:
+        for entity in PC.room.entities:
             if entity == self or not entity.active:
                 continue
             elif entity.solid and self.collides(entity, x, y):
@@ -397,6 +405,7 @@ class EntityRoom(object):
             if entity.active:
                 entity.update()
 
+
 class State(object):
 
     def __init__(self, world, name):
@@ -440,14 +449,14 @@ class World(object):
             print '[ERROR] change_state request invalid'
 
     def exit(self):
-        pc.entity_room.clear()
+        PC.room.clear()
         if self.current_state is not None:
             self.current_state.exit(None)
 
     def update(self):
-        pc.entity_room.update()
+        PC.room.update()
 
     def render(self):
-        pc.entity_room.render()
+        PC.room.render()
 
 
