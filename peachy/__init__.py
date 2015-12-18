@@ -229,6 +229,14 @@ class Entity(object):
 
         self.sprite = None        # sprite used for rendering
 
+    @property
+    def group(self):
+        return self.__groups
+    
+    @group.setter
+    def group(self, groups):
+        self.__groups = groups.split()
+
     def destroy(self):
         self.active = False
         PC.room.remove(self)
@@ -263,32 +271,30 @@ class Entity(object):
             return True
         else:
             return False
-        #if bottom_a <= top_b or top_a >= bottom_b or \
-        #   right_a <= left_b or left_a >= right_b:
-        #    return False
-        #else:
-        #    return True
 
     def collides_group(self, group, x=None, y=None):
         x, y = self._check_bounds(x, y)
 
         collisions = []
-        for entity in PC.room.entities:
-            if entity == self or not entity.active:
-                continue
-            elif entity.group == group and self.collides(entity, x, y):
+        entities = PC.room.get_group(group)
+        for entity in entities:
+            if entity is not self and entity.active and \
+               self.collides(entity, x, y) and entity not in collisions:
                 collisions.append(entity)
         return collisions
     
-    def collides_groups(self, x=None, y=None, *groups):
+    def collides_groups(self, x, y, *groups):
         # TODO convert to *args
         x, y = self._check_bounds(x, y)
 
         collisions = []
-        for entity in PC.room.entities:
-            if entity == self or not entity.active:
-                continue
-            elif entity.group in groups and self.collides(entity, x, y):
+        entities = []
+        for group in groups:
+            entities += PC.room.get_group(group)
+
+        for entity in entities:
+            if entity is not self and entity.active and \
+               self.collides(entity, x, y) and entity not in collisions:
                 collisions.append(entity)
         return collisions
     
@@ -343,6 +349,12 @@ class Entity(object):
     
     def distance_from(self, entity):
         return abs((self.x - entity.x) + (self.y - entity.y))
+    
+    def member_of(self, group):
+        for g in self.group:
+            if group == g:
+                return True
+        return False
 
     def render(self):
         return
@@ -366,10 +378,10 @@ class EntityRoom(object):
     def clear(self):
         del self.entities[:]
 
-    def get_group(self, group_name):
+    def get_group(self, group):
         ents = []
         for e in self.entities:
-            if e.group == group_name:
+            if e.member_of(group):
                 ents.append(e)
         return ents
 
@@ -377,6 +389,7 @@ class EntityRoom(object):
         for e in self.entities:
             if e.name == name:
                 return e
+        return None
 
     def remove(self, entity):
         try:
@@ -384,9 +397,9 @@ class EntityRoom(object):
         except ValueError:
             pass  # Do nothing
 
-    def remove_group(self, group_name):
+    def remove_group(self, group):
         for entity in self.entities:
-            if entity.group == group_name:
+            if entity.member_of(group):
                 self.entities.remove(entity)
 
     def remove_name(self, entity_name):
