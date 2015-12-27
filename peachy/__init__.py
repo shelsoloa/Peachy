@@ -5,6 +5,7 @@ import sys
 from pygame.locals import *
 
 import graphics
+import assets
 from utils import Input
 
 if __debug__:
@@ -22,15 +23,14 @@ if __debug__:
             graphics.draw_line(offset_x, y, view_width, y)
             y += cell_height
 
-"""
-PC (Peachy Controller)
-
-This is the central controlling class for the Peachy framework. This class
-controls the window, world, and entity room.
-
-"""
 class PC(object):
-    
+    """
+    PC (Peachy Controller)
+
+    This is the central controlling class for the Peachy framework. This class
+    controls the window, world, and entity room.
+    """
+
     _window_surface = None
     _render_surface = None
 
@@ -43,7 +43,6 @@ class PC(object):
     view_size = (0, 0)
     window_size = (0, 0)
 
-    room = None
     world = None
 
     DEBUG = False
@@ -102,10 +101,10 @@ class PC(object):
 
         graphics._MAIN_CONTEXT = PC._render_surface
         graphics.set_context(PC._render_surface)
+        graphics.set_font('assets/ProggyClean.ttf', 16)
         
         # Init peachy
         Input.init()
-        PC.room = EntityRoom()
         PC.world = World()
 
         if fps > 0:
@@ -131,10 +130,7 @@ class PC(object):
                     if event.type == QUIT:
                         running = False
                         break
-                    #elif event.type == MOUSEMOTION or \
-                    #     event.type == MOUSEBUTTONUP or \
-                    #     event.type == MOUSEBUTTONDOWN:
-                    #    Input.poll_mouse()
+
                 utils.Input.poll_keyboard()
 
 
@@ -186,7 +182,7 @@ class PC(object):
                         float(monitor_info.current_h) / float(PC.view_size[1]))
 
             window_width = int(PC.view_size[0] * ratio)
-            window_height = int(pls.view_size[1] * ratio)
+            window_height = int(PC.view_size[1] * ratio)
             
             PC.window_size = (window_width, window_height)
         else:
@@ -229,6 +225,8 @@ class Entity(object):
 
         self.sprite = None        # sprite used for rendering
 
+        self.container = None     # The owner of this entity. Must be set before performing any operations involving groups of entities
+
     @property
     def group(self):
         return self.__groups
@@ -238,76 +236,81 @@ class Entity(object):
         self.__groups = groups.split()
 
     def destroy(self):
+        self.container.remove(self)
         self.active = False
-        PC.room.remove(self)
+        self.world = None
 
-    # TODO change to validate_coordinates(self, x, y)
-    def _check_bounds(self, x, y):
-        if x is None or y is None:
-            return (self.x, self.y)
-        else:
-            return (x, y)
-
-    def collides(self, e, x=None, y=None):  
-        x, y = self._check_bounds(x, y)
-
-        if e is None or e == self:
-            return False
-
-        left_a = x
+    def collides(self, e, x, y):  
         right_a = x + self.width
-        top_a = y
         bottom_a = y + self.height
-
-        left_b = e.x
         right_b = e.x + e.width
-        top_b = e.y
         bottom_b = e.y + e.height
         
-        if left_a < right_b and \
-           right_a > left_b and \
-           top_a < bottom_b and \
-           bottom_a > top_b:
+        if x < right_b and \
+           right_a > e.x and \
+           y < bottom_b and \
+           bottom_a > e.y:
             return True
         else:
             return False
 
     def collides_group(self, group, x=None, y=None):
-        x, y = self._check_bounds(x, y)
+        if x is None or y is None:
+            x = self.x
+            y = self.y
 
         collisions = []
-        entities = PC.room.get_group(group)
+        entities = self.container.get_group(group)
+
+        try:
+            entities.remove(self)
+        except ValueError:
+            pass
+
         for entity in entities:
-            if entity is not self and entity.active and \
-               self.collides(entity, x, y) and entity not in collisions:
+            if entity.active and self.collides(entity, x, y):
                 collisions.append(entity)
         return collisions
     
     def collides_groups(self, x, y, *groups):
         # TODO convert to *args
-        x, y = self._check_bounds(x, y)
+        if x is None or y is None:
+            x = self.x
+            y = self.y
 
-        collisions = []
+        # receive possible entities
         entities = []
         for group in groups:
-            entities += PC.room.get_group(group)
+            entities += self.container.get_group(group)
 
+        # remove duplicates
+        keys = {}
+        for e in entities:
+            keys[e] = 1
+        keys.pop(self, None)
+        entities = keys.keys() 
+
+        # collision detection
+        collisions = []
         for entity in entities:
-            if entity is not self and entity.active and \
-               self.collides(entity, x, y) and entity not in collisions:
+            if entity.active and self.collides(entity, x, y):
                 collisions.append(entity)
         return collisions
-    
-    def collides_name(self, name, x=None, y=None):
-        x, y = self._check_bounds(x, y)
 
-        for entity in PC.room.entities:
+    def collides_name(self, name, x=None, y=None):
+        if x is None or y is None:
+            x = self.x
+            y = self.y
+
+        for entity in self.container:
             if entity.name == name and self.collides(entity, x, y):
                 return entity
         return None
 
     def collides_point(self, point, x=None, y=None):
-        x, y = self._check_bounds(x, y)
+        if x is None or y is None:
+            x = self.x
+            y = self.y
 
         px, py = point
         if x <= px <= x + self.width and y <= py <= y + self.height:
@@ -315,8 +318,45 @@ class Entity(object):
         else:
             return False
 
+    def collides_circle(self, circle, x=None, y=None):
+        """
+        circle is tuple (x, y, radius)
+        """
+        if x is None or y is None:
+            x = self.x
+            y = self.y
+        
+        circle_x, circle_y, radius = circle
+        circle_x += radius
+        circle_y += radius
+
+        rx = self.x + self.width / 2
+        ry = self.y + self.height / 2
+        
+        dist_x = abs(circle_x - rx)
+        dist_y = abs(circle_y - ry)
+        half_width = self.width / 2
+        half_height = self.height / 2
+
+        if dist_x > (half_width + radius):
+            return False
+        if dist_y > (half_height + radius):
+            return False
+
+        if dist_x <= half_width:
+            return True
+        if dist_y <= half_height:
+            return True
+
+        corner_distance = (dist_x - half_width)**2 + (dist_y - half_height)**2
+
+        return corner_distance <= (radius**2)
+
+
     def collides_rect(self, rect, x=None, y=None):
-        x, y = self._check_bounds(x, y)
+        if x is None or y is None:
+            x = self.x
+            y = self.y
 
         rx, ry, rwidth, rheight = rect
 
@@ -337,10 +377,12 @@ class Entity(object):
             return True
 
     def collides_solid(self, x=None, y=None):
-        x, y = self._check_bounds(x, y)
+        if x is None or y is None:
+            x = self.x
+            y = self.y
 
         collisions = []
-        for entity in PC.room.entities:
+        for entity in self.container:
             if entity == self or not entity.active:
                 continue
             elif entity.solid and self.collides(entity, x, y):
@@ -350,9 +392,9 @@ class Entity(object):
     def distance_from(self, entity):
         return abs((self.x - entity.x) + (self.y - entity.y))
     
-    def member_of(self, group):
-        for g in self.group:
-            if group == g:
+    def member_of(self, *groups):
+        for group in self.group:
+            if group in groups:
                 return True
         return False
 
@@ -363,15 +405,18 @@ class Entity(object):
         return
 
 
-class EntityRoom(object):
-    """
-    Entity container
-    """
-
+class EntityContainer(object):
     def __init__(self):
         self.entities = []
 
+    def __contains__(self, item):
+        return item in self.entities
+
+    def __iter__(self):
+        return self.entities.__iter__()
+
     def add(self, entity):
+        entity.container = self
         self.entities.append(entity)
         return entity
 
@@ -421,9 +466,9 @@ class EntityRoom(object):
 
 class State(object):
 
-    def __init__(self, world, name):
-        self.world = world
+    def __init__(self, name, world):
         self.name = name
+        self.world = world
 
     def enter(self, previous_state, *args):
         return
@@ -444,32 +489,38 @@ class World(object):
     """
 
     def __init__(self):
+        self.entities = EntityContainer()
+        self.state = None
         self.states = {}
-        self.current_state = None
+
+    def add_state(self, state):
+        self.states[state.name] = state
+        if self.state is None:
+            self.state = state
 
     def change_state(self, state_name, *args):
         if state_name in self.states and \
-           state_name != self.current_state.name:
-            previous_state = self.current_state
+           state_name != self.state.name:
+
+            previous_state = self.state
             incoming_state = self.states[state_name]
 
             previous_state.exit(incoming_state, *args)
             incoming_state.enter(previous_state, *args)
             
-            self.current_state = incoming_state
+            self.state = incoming_state
         else:
             print state_name in self.states
             print '[ERROR] change_state request invalid'
 
     def exit(self):
-        PC.room.clear()
-        if self.current_state is not None:
-            self.current_state.exit(None)
+        self.entities.clear()
+        if self.state is not None:
+            self.state.exit(None)
 
     def update(self):
-        PC.room.update()
+        self.entities.update()
 
     def render(self):
-        PC.room.render()
-
+        self.entities.render()
 

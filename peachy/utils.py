@@ -3,6 +3,7 @@ import pickle
 import pygame
 import xml.dom.minidom
 import peachy.graphics
+import peachy.assets
 from pygame.locals import *
 
 
@@ -72,6 +73,7 @@ def open_xml(path):
         print '[ERROR] could not load xml file: ' + path
 
 
+'''
 class Assets(object):
     """
     An asset management helper class
@@ -137,6 +139,7 @@ class Assets(object):
         except IOError:
             print '[ERROR] could not find Sound: ' + path
             return None
+'''
 
 
 class Camera(object):
@@ -222,7 +225,7 @@ class Camera(object):
             self.y = target_y
 
     def translate(self):
-        graphics.translate(self.x, self.y)
+        peachy.graphics.translate(self.x, self.y)
 
 
 class Input(object):
@@ -390,7 +393,6 @@ class Input(object):
             return -1
 
 
-
 class SoundEffect(object):
 
     def __init__(self, sound):
@@ -415,7 +417,6 @@ class SoundEffect(object):
             if self.channel.get_sound() == self.sound:
                 self.channel.stop()
                 self.channel = None
-
 
 
 class Stage(object):
@@ -446,7 +447,12 @@ class Stage(object):
     @staticmethod
     def load_tiled(path):
         xml = open_xml(path)
+        if xml is None:
+            raise IOError('stage "{0}" not found'.format(path))
+        
         stage_raw = xml.getElementsByTagName('map')[0]
+
+        asset_path = os.path.dirname(path)
 
         # Load base attributes
         stage = Stage()
@@ -458,14 +464,15 @@ class Stage(object):
         stage.path = path
 
         map_properties = xml.getElementsByTagName('properties')
-        if map_properties:
+        try:
             for prop in map_properties[0].getElementsByTagName('property'):
                 property_name = prop.getAttribute('name')
                 property_value = prop.getAttribute('value')
                 stage.properties[property_name] = property_value
+        except IndexError:
+            pass
 
         # Load tilesets
-
         for tileset_raw in stage_raw.getElementsByTagName('tileset'):
 
             tileset = stage._Tileset()
@@ -474,11 +481,14 @@ class Stage(object):
             tileset.tilewidth = int(tileset_raw.getAttribute('tilewidth'))
             tileset.tileheight = int(tileset_raw.getAttribute('tileheight'))
 
-            tileset.image = AssetManager.get_image(tileset.name)
+            tileset.image = peachy.assets.get_image(tileset.name)
             if tileset.image is None:
                 image_raw = tileset_raw.getElementsByTagName('image')[0]
                 source = image_raw.getAttribute('source')
-                tileset.image = AssetManager.load_image(tileset.name, source)
+
+                source_path = os.path.abspath(os.path.join(asset_path, source))
+                
+                tileset.image = peachy.assets.load_image(tileset.name, source_path)
 
             stage.tileset_images += splice_image(tileset.image,
                                                 tileset.tilewidth,
@@ -578,27 +588,32 @@ class Stage(object):
             points.append(map(int, raw_point.split(',')))
         return points
 
-    # TODO improve map render performance
-    #
-    # Modify tiles to directly reference their image instead of holding a gid.
-    # Don't try to draw every image
-
     def render(self):
+        """
+        Render all layers, front to back
+        """
         for layer in self.layers:
+            render_layer(layer)
+
+    def render_layer(self, layer, name=None):
+        """
+        Render a single layer by providing a reference to the layer or 
+        alternatively a name
+        """
+
+        if name:
+            for lay in self.layers:
+                if lay.name == name:
+                    layer = lay
+                    break
+
+        try:
             for tile in layer.tiles:
-                tile_image = self.tileset_images[tile.gid]
-                graphics.draw_image(tile_image, tile.x, tile.y)
+                peachy.graphics.draw_image(self.tileset_images[tile.gid - 1], 
+                    tile.x, tile.y)
+        except AttributeError:
+            print '[ERROR] Layer could not be rendered ' + layer
 
-    def render_layer(self, layer):
-        for tile in layer.tiles:
-            tile_image = self.tileset_images[tile.gid - 1]
-            graphics.draw_image(tile_image, tile.x, tile.y)
-
-    def render_layer_name(self, layer_name):
-        for layer in self.layers:
-            if layer.name == layer_name:
-                self.render_layer(layer)
-                break
 
     class _Layer(object):
         def __init__(self):

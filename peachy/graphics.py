@@ -1,4 +1,7 @@
+import os
 import pygame
+from pygame import Surface
+from peachy.utils import splice_image
 
 FLIP_X = 0x01
 FLIP_Y = 0x02
@@ -36,19 +39,32 @@ def draw_line(x1, y1, x2, y2):
 
     pygame.draw.line(context, color, (x1, y1), (x2, y2))
 
-def draw_circle(x, y, diameter):
-    radius = diameter / 2
+def draw_circle(x, y, r):
+    x = int(x - translate_x + r)
+    y = int(y - translate_y + r)
 
-    x = int(x - translate_x + radius)
-    y = int(y - translate_y + radius)
-
-    pygame.draw.circle(context, color, (x, y), radius)
+    try:
+        assert color[3] < 255
+        temp = Surface((r * 2, r * 2), pygame.SRCALPHA)
+        pygame.draw.circle(temp, color, (r, r), r)
+        context.blit(temp, (x - r, y - r))
+    except (AssertionError, IndexError):
+        pygame.draw.circle(context, color, (x, y), r)
 
 def draw_rect(x, y, width, height):
+    """
+    Draw a rectangle using the color previously specified by set_color
+    """
     x -= translate_x
     y -= translate_y
-    
-    pygame.draw.rect(context, color, (x, y, width, height))
+
+    try:
+        assert color[3] < 255
+        temp = Surface((width, height), pygame.SRCALPHA)
+        temp.fill(color)
+        context.blit(temp, (x, y))
+    except (AssertionError, IndexError):
+        pygame.draw.rect(context, color, (x, y, width, height))
 
 def draw_text(text, x, y, aa=False, center=False):
     text_surface = font.render(text, aa, color)
@@ -60,6 +76,13 @@ def draw_text(text, x, y, aa=False, center=False):
         text_rect.centerx = context_rect.centerx
 
     context.blit(text_surface, text_rect)
+
+def reset_context():
+    global context
+    global context_rect
+
+    context = _MAIN_CONTEXT
+    context_rect = _MAIN_CONTEXT.get_rect()
 
 def set_color(r, g, b, a=255):
     global color
@@ -75,8 +98,17 @@ def set_context(new_context):
     context = new_context
     context_rect = context.get_rect()
 
-def transform_rotate(image, degree):
+def set_font(font_path, point_size):
+    global font
+
+    font = pygame.font.Font(font_path, point_size)
+
+def rotate(image, degree):
     return pygame.transform.rotate(image, degree)
+
+def scale(image, scale):
+    x, y, w, h = image.get_rect()
+    return pygame.transform.scale(image, (w * scale, h * scale))
 
 def translate(x, y):
     global translate_x
@@ -92,30 +124,6 @@ def translate_center(x, y):
     half_vw, half_vh = [v / 2 for v in pc.view_size]
     translate_x = x - half_vw
     translate_y = y - half_vh
-
-
-class Sprite(object):
-    
-    def __init__(self, source, origin_x=0, origin_y=0):
-        self.source = source
-
-        self.origin_x = origin_x
-        self.origin_y = origin_y
-
-        self.flipped_x = False
-        self.flipped_y = False
-
-    def render(self, x, y):
-        x -= self.origin_x
-        y -= self.origin_y
-
-        args = 0
-
-        if self.flipped_x:
-            args = args | FLIP_X
-        if self.flipped_y:
-            args = args | FLIP_Y
-        draw_image(self.source, x, y, args)
 
 
 class SpriteMap(object):
@@ -144,36 +152,44 @@ class SpriteMap(object):
         self.origin_x = origin_x
         self.origin_y = origin_y
 
-    def add(self, name, frames, frame_rate=0, loops=False, callback=None):
+    def add(self, name, frames, frame_rate=0, loops=False, callback=None, origin=(0,0)):
         animation = {
             "frames": frames,
             "frame_rate": frame_rate,
             "loops": loops,
-            "callback": callback
+            "callback": callback,
+            "origin": origin
         }
         self.animations[name] = animation
 
     def pause(self):
         self.paused = True
 
-    def play(self, anim_name, flip_x=False, flip_y=False):
+    '''
+        Will play the animation specified by anim_name.
+        flip_x and flip_y will flip along the x or y axis respectively
+        restart will start the animation for the very beginning
+    '''
+    def play(self, anim_name, flip_x=False, flip_y=False, restart=False):
         if anim_name in self.animations:
-            self.name = anim_name
-            self.flipped_x = flip_x
-            self.flipped_y = flip_y
-            self.paused = False
+            if self.name != anim_name or self.flipped_x != flip_x and \
+               self.flipped_y != flip_y or restart:
+                self.name = anim_name
+                self.flipped_x = flip_x
+                self.flipped_y = flip_y
+                self.paused = False
 
-            self.current_animation = self.animations[anim_name]
-            self.current_frame = 0
-            self.time_remaining = self.current_animation['frame_rate']
-            self.callback = self.current_animation['callback']
+                self.current_animation = self.animations[anim_name]
+                self.current_frame = 0
+                self.time_remaining = self.current_animation['frame_rate']
+                self.callback = self.current_animation['callback']
 
     def render(self, x, y):
         if not self.paused:
             self.step()
 
-        x -= self.origin_x
-        y -= self.origin_y
+        x -= self.current_animation['origin'][0]
+        y -= self.current_animation['origin'][1]
 
         frame = self.current_animation['frames'][self.current_frame]
         args = 0

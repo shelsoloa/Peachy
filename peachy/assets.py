@@ -1,66 +1,75 @@
+import os
 import pygame
 
-class Assets(object):
+'''class Assets(object):
     """
     An asset management helper class
     """
+'''
 
-    assets_path = ''
-    stored_fonts = dict()
-    stored_images = dict()
-    stored_sounds = dict()
+class Storage:
+    fonts = dict()
+    images = dict()
+    sounds = dict()
 
-    def get_font(asset_name):
-        return stored_fonts.get(asset_name)
+def get_font(asset_name):
+    return Storage.fonts.get(asset_name)
 
-    def get_image(asset_name):
-        return stored_images.get(asset_name)
+def get_image(asset_name):
+    image = Storage.images.get(asset_name)
+    if image is None:
+        return load_image('', asset_name, False)
+    else:
+        return image
 
-    def get_sound(asset_name):
-        return stored_sounds.get(asset_name)
+def get_sound(asset_name):
+    return Storage.sounds.get(asset_name)
 
-    def store_font(asset_name, path, point_size):
-        """Retrieves a font from the HDD"""
+def load_font(asset_name, path, point_size, store=True):
+    """Retrieves a font from the HDD"""
 
-        path = path.lstrip('../')  # cannot rise outside of asset_path
+    path = path.lstrip('../')  # cannot rise outside of asset_path
 
-        try:
-            font = pygame.font.Font(os.path.join(AssetManager.assets_path, path), point_size)
-            AssetManager.stored_fonts[asset_name] = font
-            return font
-        except IOError:
-            # TODO incorporate default font
-            print '[ERROR] could not find Font: ' + path
-            pc.quit()
+    try:
+        font = pygame.font.Font(path, point_size)
+        if store:
+            Storage.fonts[asset_name] = font
+        return font
+    except IOError:
+        # TODO incorporate default font
+        print '[ERROR] could not find Font: ' + path
+        return None
 
-    def store_image(asset_name, path):
-        """Retrieves an image from the HDD"""
+def load_image(asset_name, path, store=True):
+    """Retrieves an image from the HDD"""
+    # path = path.lstrip('../')  # cannot rise outside of asset_path
 
-        path = path.lstrip('../')  # cannot rise outside of asset_path
+    try:
+        image = pygame.image.load(path)
+        image.convert_alpha()
+        if store:
+            Storage.images[asset_name] = image
+        return image
+    except IOError:
+        print '[ERROR] could not find Image: ' + path
+        return None
+    except pygame.error:
+        print '[ERROR] could not load Image: ' + path
+        return None
 
-        try:
-            image = pygame.image.load(os.path.join(AssetManager.assets_path, path))
-            image.convert_alpha()
-            AssetManager.stored_images[asset_name] = image
-            return image
-        except IOError:
-            print '[ERROR] could not find Image: ' + path
-            pc.quit()
+def load_sound(asset_name, path, store=True):
+    """Retrieves a sound file from the HDD"""
+    # TODO add linux support
 
-    def store_sound(asset_name, path):
-        """Retrieves a sound file from the HDD"""
-        # TODO add linux support
+    path = path.lstrip('../')  # cannot rise outside of asset_path
 
-        path = path.lstrip('../')  # cannot rise outside of asset_path
-
-        try:
-            sound = pygame.mixer.Sound(os.path.join(AssetManager.assets_path, path))
-            AssetManager.stored_sounds[asset_name] = sound
-            return sound
-        except IOError:
-            print '[ERROR] could not find Sound: ' + path
-            sound = pygame.mixer.Sound()
-            AssetManager.stored_sounds[asset_name] = sound
-            return sound
+    try:
+        sound = pygame.mixer.Sound(path)
+        if store:
+            Storage.sounds[asset_name] = sound
+        return sound
+    except IOError:
+        print '[ERROR] could not find Sound: ' + path
+        return None
 
 
