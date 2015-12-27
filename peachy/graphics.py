@@ -6,7 +6,7 @@ from peachy.utils import splice_image
 FLIP_X = 0x01
 FLIP_Y = 0x02
 
-_MAIN_CONTEXT = None  # A constant that holds the main render context
+DEFAULT_CONTEXT = None  # A constant that holds the main render context
 
 context = None
 context_rect = None
@@ -81,8 +81,8 @@ def reset_context():
     global context
     global context_rect
 
-    context = _MAIN_CONTEXT
-    context_rect = _MAIN_CONTEXT.get_rect()
+    context = DEFAULT_CONTEXT
+    context_rect = DEFAULT_CONTEXT.get_rect()
 
 def set_color(r, g, b, a=255):
     global color

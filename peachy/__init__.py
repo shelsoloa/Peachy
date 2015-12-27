@@ -6,7 +6,7 @@ from pygame.locals import *
 
 import graphics
 import assets
-from utils import Input
+import utils
 
 if __debug__:
     def debug_draw_grid(cell_width, cell_height, offset_x=0, offset_y=0):
@@ -23,6 +23,7 @@ if __debug__:
             graphics.draw_line(offset_x, y, view_width, y)
             y += cell_height
 
+
 class PC(object):
     """
     PC (Peachy Controller)
@@ -31,26 +32,56 @@ class PC(object):
     controls the window, world, and entity room.
     """
 
-    _window_surface = None
-    _render_surface = None
-
-    _frames_per_second = 30
-    _scale = -1
-    _title = ''
+    fps = 0
+    scale = -1
+    title = ''
 
     background_color = (0, 0, 0)
 
-    view_size = (0, 0)
-    window_size = (0, 0)
+    width = 0
+    height = 0
 
+    engine = None
     world = None
 
-    DEBUG = False
+    debug = False
 
     @staticmethod
-    def init(view_size, fps=0, scale=1, title='Game', debug=False):
+    def change_world(world_name):
+        PC.engine.change_world(world_name)
 
-        os.environ['SDL_VIDEO_CENTERED'] = "1"
+    @staticmethod
+    def set_title(title):
+        pygame.display.set_caption(title)
+
+    @staticmethod
+    def quit():
+        pygame.event.post(pygame.event.Event(QUIT))
+
+
+class Engine(object):
+    def __init__(self, view_size, title='', fps=60, scale=1, debug=False):
+        self.worlds = {}
+        self.world = None
+
+        PC.engine = self
+        PC.width = view_size[0]
+        PC.height = view_size[1]
+        PC.title = title
+        PC.scale = scale
+        PC.fps = fps
+        PC.debug = debug
+
+        self._render_surface = None
+        self._window_surface = None
+
+        if fps <= 0:
+            PC.fps = 60
+        if debug:
+            print platform.system()
+
+        # initialize pygame
+        os.environ['SDL_VIDEO_CENTERED'] = "1" 
 
         try:
             pygame.display.init()
@@ -65,107 +96,37 @@ class PC(object):
             else:
                 print "Could not initialize pygame modules"
 
-        '''
-        pygame.mixer.pre_init(44100, 16, 2, 512)
-        if platform.system() == 'Linux':
-            pygame.display.init()
-            pygame.font.init()
-            # TODO fix Linux mixer (very low priority)
-        else:
-            pygame.init()
-        '''
-
         # General initialization
-        PC._title = title
-        PC._scale = scale
-
-        # Init joysticks
-        # TODO Fix joystick functionality
-        # joystick_count = pygame.joystick.get_count()
-        # for i in range(joystick_count):
-        #     Input.joystick_raw.append(pygame.joystick.Joystick(i))
-        #     Input.joystick_raw[i].init()
-        #     Input.joystick.append({
-        #         'AXIS': [], 
-        #         'BUTTON': [] 
-        #     })
-
-        # Init pygame display
         pygame.display.set_caption(title)
+        utils.Input.init()
 
-        PC.view_size = view_size
-        PC.window_size = (view_size[0] * scale, view_size[1] * scale)
+        # Init display (pygame)
+        self.view_size = (PC.width, PC.height)
+        self.window_size = (PC.width * scale, PC.height * scale)
         
-        PC._window_surface = pygame.display.set_mode(PC.window_size)
-        PC._render_surface = pygame.Surface(PC.view_size)
+        self._window_surface = pygame.display.set_mode(self.window_size)
+        self._render_surface = pygame.Surface(self.view_size)
 
-        graphics._MAIN_CONTEXT = PC._render_surface
-        graphics.set_context(PC._render_surface)
-        graphics.set_font('assets/ProggyClean.ttf', 16)
-        
-        # Init peachy
-        Input.init()
-        PC.world = World()
+        graphics.DEFAULT_CONTEXT = self._render_surface
+        graphics.set_context(self._render_surface)
 
-        if fps > 0:
-            PC._frames_per_second = fps
+        graphics.set_font('assets/ProggyClean.ttf', 16)  # TODO move asset to peachy
 
-        # Init debug
-        if debug:
-            PC.DEBUG = debug
-            print platform.system()
+    def add_world(self, world):
+        self.worlds[world.name] = world
+        if self.world is None:
+            self.world = world
+            PC.world = self.world
 
-    @staticmethod
-    def run():
-        game_timer = pygame.time.Clock()
-        Input.poll_keyboard()
+    def change_world(self, world):
+        if world in self.worlds:
+            self.world.exit()
+            self.world = self.worlds[world]
+            self.world.enter()
+        else:
+            print '[WARN] World not found: {0}'.format(world)
 
-        running = True
-
-        try:
-            while running:
-
-                # Parse events
-                for event in pygame.event.get():
-                    if event.type == QUIT:
-                        running = False
-                        break
-
-                utils.Input.poll_keyboard()
-
-
-                # Update
-                PC.world.update()
-
-                # Render - Draw World
-                PC._render_surface.fill(PC.background_color)
-                PC.world.render()
-
-                # Render - Transformations
-                # TODO speed up scaling somehow
-                render_size = PC.window_size
-                pygame.transform.scale(PC._render_surface, render_size, PC._window_surface)
-
-                # Render - Finalize
-                pygame.display.flip()
-
-                # Maintain fps
-                game_timer.tick(PC._frames_per_second)
-                if PC.DEBUG:
-                    fps = round(game_timer.get_fps())
-                    pygame.display.set_caption(PC._title + ' {' + str(fps) + '}')
-            
-            PC.world.exit()
-            pygame.quit()
-
-        except:
-            import traceback
-            print "[ERROR] Unexpected error. {0} shutting down.".format(PC._title)
-            traceback.print_exc()
-            sys.exit()
-
-    @staticmethod
-    def toggle_fullscreen():
+    def fullscreen(self):
         screen = pygame.display.get_surface()
         caption = pygame.display.get_caption()
         
@@ -175,30 +136,81 @@ class PC(object):
         pygame.display.quit()
         pygame.display.init()
 
+        window_size = (0, 0)
+
         if flags^FULLSCREEN:
             monitor_info = pygame.display.Info()
 
-            ratio = min(float(monitor_info.current_w) / float(PC.view_size[0]),
-                        float(monitor_info.current_h) / float(PC.view_size[1]))
+            ratio = min(float(monitor_info.current_w) / float(PC.width),
+                        float(monitor_info.current_h) / float(PC.height))
 
-            window_width = int(PC.view_size[0] * ratio)
-            window_height = int(PC.view_size[1] * ratio)
-            
-            PC.window_size = (window_width, window_height)
+            window_width = int(PC.width * ratio)
+            window_height = int(PC.height * ratio)
+            self.window_size(window_width, window_height)
         else:
-            PC.window_size = (PC.view_size[0] * PC._scale, PC.view_size[1] * PC._scale)
+            self.window_size = (PC.width * PC.scale, PC.height * PC.scale)
+
         pygame.display.set_caption(*caption)
 
-        PC._window_surface = pygame.display.set_mode(PC.window_size, flags^FULLSCREEN, bits)
-        PC._render_surface = pygame.Surface(PC.view_size)
+        # self._window_surface = pygame.display.set_mode(PC.window_size, flags^FULLSCREEN, bits)
+        pygame.display.set_mode(window_size, flags^FULLSCREEN, bits)
+        self._render_surface = pygame.Surface(PC.view_size)
 
-        graphics._MAIN_CONTEXT = PC._render_surface
-        graphics.set_context(PC._render_surface)
+        graphics.DEFAULT_CONTEXT = self._render_surface
+        graphics.set_context(self._render_surface)
 
-    @staticmethod
-    def quit():
-        pygame.event.post(pygame.event.Event(QUIT))
+    def run(self):
+        game_timer = pygame.time.Clock()
+        utils.Input.poll_keyboard()
 
+        running = True
+
+        try:
+            while running:
+                if self.world is not PC.world:
+                    PC.world = self.world
+
+                # Parse events
+                for event in pygame.event.get():
+                    if event.type == QUIT:
+                        running = False
+                        break
+
+                utils.Input.poll_keyboard()
+
+                # Update
+                self.world.update()
+
+                # Render - Draw World
+                self._render_surface.fill(PC.background_color)
+                self.world.render()
+
+                # Render - Transformations
+                # TODO speed up scaling somehow
+                pygame.transform.scale(self._render_surface, self.window_size, self._window_surface)
+
+                # Render - Finalize
+                pygame.display.flip()
+
+                # Maintain fps
+                game_timer.tick(PC.fps)
+                if PC.debug:
+                    fps = round(game_timer.get_fps())
+                    pygame.display.set_caption(PC.title + ' {' + str(fps) + '}')
+            
+            self.shutdown()
+            pygame.quit()
+
+        except:
+            import traceback
+            print "[ERROR] Unexpected error. {0} shutting down.".format(PC.title)
+            traceback.print_exc()
+            sys.exit()
+
+    def shutdown(self):
+        for _, world in self.worlds.iteritems():
+            world.close()
+    
 
 class Entity(object):
     """
@@ -488,7 +500,8 @@ class World(object):
     State machine
     """
 
-    def __init__(self):
+    def __init__(self, name):
+        self.name = name
         self.entities = EntityContainer()
         self.state = None
         self.states = {}
@@ -513,7 +526,13 @@ class World(object):
             print state_name in self.states
             print '[ERROR] change_state request invalid'
 
+    def enter(self):
+        return
+
     def exit(self):
+        return
+
+    def close(self):
         self.entities.clear()
         if self.state is not None:
             self.state.exit(None)
