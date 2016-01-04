@@ -146,15 +146,15 @@ class Engine(object):
 
             window_width = int(PC.width * ratio)
             window_height = int(PC.height * ratio)
-            self.window_size(window_width, window_height)
+            self.window_size = (window_width, window_height)
         else:
             self.window_size = (PC.width * PC.scale, PC.height * PC.scale)
 
         pygame.display.set_caption(*caption)
 
-        # self._window_surface = pygame.display.set_mode(PC.window_size, flags^FULLSCREEN, bits)
-        pygame.display.set_mode(window_size, flags^FULLSCREEN, bits)
-        self._render_surface = pygame.Surface(PC.view_size)
+        self._window_surface = pygame.display.set_mode(self.window_size, flags^FULLSCREEN, bits)
+        # pygame.display.set_mode(window_size, flags^FULLSCREEN, bits)
+        self._render_surface = pygame.Surface(self.view_size)
 
         graphics.DEFAULT_CONTEXT = self._render_surface
         graphics.set_context(self._render_surface)

@@ -80,9 +80,13 @@ def draw_text(text, x, y, aa=False, center=False):
 def reset_context():
     global context
     global context_rect
+    global translate_x
+    global translate_y
 
     context = DEFAULT_CONTEXT
     context_rect = DEFAULT_CONTEXT.get_rect()
+    translate_x = 0
+    translate_y = 0
 
 def set_color(r, g, b, a=255):
     global color
@@ -90,6 +94,15 @@ def set_color(r, g, b, a=255):
     if (0 <= r <= 255) and (0 <= g <= 255) and (0 <= b <= 255) and (0 <= a <= 255):
         # TODO fix alpha
         color = pygame.Color(r, g, b, a)
+
+def set_color_hex(val):
+    # (#ffffff) -> (255, 255, 255)
+    val = val.lstrip('#')
+    lv = len(val)
+    # Hell if I know how this works...
+    color = tuple(int(val[i:i + lv // 3], 16) for i in range(0, lv, lv // 3))
+
+    set_color(*color)
 
 def set_context(new_context):
     global context

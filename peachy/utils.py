@@ -55,14 +55,6 @@ def splice_image(image, frame_width, frame_height, margin_x=0, margin_y=0):
     return sub_images
 
 
-def hex_to_rgb(val):
-    # (#ffffff) -> (255, 255, 255)
-    val = val.lstrip('#')
-    lv = len(val)
-    # Hell if I know how this works...
-    return tuple(int(val[i:i + lv // 3], 16) for i in range(0, lv, lv // 3))
-
-
 def open_xml(path):
     try:
         xml_file = open(path, 'r')
@@ -73,78 +65,9 @@ def open_xml(path):
         print '[ERROR] could not load xml file: ' + path
 
 
-'''
-class Assets(object):
-    """
-    An asset management helper class
-    """
-
-    stored_fonts = dict()
-    stored_images = dict()
-    stored_sounds = dict()
-
-    @classmethod
-    def get_font(cls, asset_name):
-        return cls.stored_fonts.get(asset_name)
-
-    @classmethod
-    def get_image(cls, asset_name):
-        return cls.stored_images.get(asset_name)
-
-    @classmethod
-    def get_sound(cls, asset_name):
-        return cls.stored_sounds.get(asset_name)
-
-    @classmethod
-    def store_font(cls, asset_name, path, point_size):
-        """Retrieves a font from the HDD"""
-
-        path = path.lstrip('../')  # cannot rise outside of asset_path
-
-        try:
-            font = pygame.font.Font(path, point_size)
-            cls.stored_fonts[asset_name] = font
-            return font
-        except IOError:
-            # TODO incorporate default font
-            print '[ERROR] could not find Font: ' + path
-            return None
-
-    @classmethod
-    def store_image(cls, asset_name, path):
-        """Retrieves an image from the HDD"""
-
-        path = path.lstrip('../')  # cannot rise outside of asset_path
-
-        try:
-            image = pygame.image.load(path)
-            image.convert_alpha()
-            cls.stored_images[asset_name] = image
-            return image
-        except IOError:
-            print '[ERROR] could not find Image: ' + path
-            return None
-
-    @classmethod
-    def store_sound(cls, asset_name, path):
-        """Retrieves a sound file from the HDD"""
-        # TODO add linux support
-
-        path = path.lstrip('../')  # cannot rise outside of asset_path
-
-        try:
-            sound = pygame.mixer.Sound(path)
-            cls.stored_sounds[asset_name] = sound
-            return sound
-        except IOError:
-            print '[ERROR] could not find Sound: ' + path
-            return None
-'''
-
-
 class Camera(object):
     
-    def __init__(self, view_width, view_height, smoothing_enabled=False, speed=1):
+    def __init__(self, view_width, view_height, speed=1):
         self.x = 0
         self.y = 0
 
@@ -152,12 +75,7 @@ class Camera(object):
         self.view_height = view_height
         self.max_width = -1
         self.max_height = -1
-        self.bounds_width = view_width
 
-        self.destination_x = 0
-        self.destination_y = 0
-
-        self.smoothing_enabled = smoothing_enabled
         self.speed = speed
         self.target_x = 0
         self.target_y = 0
@@ -436,6 +354,7 @@ class Stage(object):
         self.properties = {}
 
         self.path = ''
+        self.name = ''  # optional
 
     def clear(self):
         del self.layers[:]
