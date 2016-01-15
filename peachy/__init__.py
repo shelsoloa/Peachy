@@ -117,6 +117,7 @@ class Engine(object):
         if self.world is None:
             self.world = world
             PC.world = self.world
+        return self.worlds[world.name]
 
     def change_world(self, world):
         if world in self.worlds:
@@ -494,6 +495,24 @@ class State(object):
     def update(self):
         return
 
+
+class Scene(object):
+
+    def __init__(self, world):
+        self.world = world
+        self.entities = EntityContainer()
+    
+    def load(self):
+        return
+
+    def exit(self):
+        return
+
+    def update(self):
+        return
+
+    def render(self):
+        return
 
 class World(object):
     """

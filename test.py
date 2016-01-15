@@ -1,10 +1,9 @@
 import peachy
-from peachy import pc
+from peachy import PC, Engine, World
 
 class Nub(peachy.Entity):
     def __init__(self, x, y):
         super(self.__class__, self).__init__(x, y)
-
         self.width = 16
         self.height = 16
         
@@ -16,18 +15,23 @@ class Nub(peachy.Entity):
         temp_x = self.x
         temp_y = self.y
 
-        if peachy.inpt.down('LEFT'):
+        if peachy.utils.Input.down('left'):
             temp_x -= 1
-        if peachy.inpt.down('RIGHT'):
+        if peachy.utils.Input.down('right'):
             temp_x += 1
-        if peachy.inpt.down('UP'):
+        if peachy.utils.Input.down('up'):
             temp_y -= 1
-        if peachy.inpt.down('DOWN'):
+        if peachy.utils.Input.down('down'):
             temp_y += 1
 
         self.x = temp_x
         self.y = temp_y
 
-pc.init((320, 240), fps=60, scale=2, debug=True)
-pc.entity_room.add(Nub(100, 100))
-pc.run()
+game = Engine((320, 240), 'Game')
+world = game.add_world(World('Play'))
+world.entities.add(Nub(100, 100))
+game.run()
+
+# PC.init((320, 240), fps=60, scale=2, debug=True)
+# PC.engine.world.add(Nub(100, 100))
+# PC.run()
