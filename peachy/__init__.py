@@ -1,7 +1,9 @@
+import math 
 import os
 import platform
-import pygame
 import sys
+
+import pygame
 from pygame.locals import *
 
 import graphics
@@ -45,10 +47,6 @@ class PC(object):
     world = None
 
     debug = False
-
-    @staticmethod
-    def change_world(world_name):
-        PC.engine.change_world(world_name)
 
     @staticmethod
     def set_title(title):
@@ -248,6 +246,9 @@ class Entity(object):
     def group(self, groups):
         self.__groups = groups.split()
 
+    def center(self):
+        return (self.x + self.width / 2, self.y + self.height / 2)
+
     def destroy(self):
         self.container.remove(self)
         self.active = False
@@ -365,7 +366,6 @@ class Entity(object):
 
         return corner_distance <= (radius**2)
 
-
     def collides_rect(self, rect, x=None, y=None):
         if x is None or y is None:
             x = self.x
@@ -403,7 +403,14 @@ class Entity(object):
         return collisions
     
     def distance_from(self, entity):
-        return abs((self.x - entity.x) + (self.y - entity.y))
+        a = abs(self.x - entity.x)
+        b = abs(self.y - entity.y)
+        return math.sqrt(a**2 + b**2)
+
+    def distance_from_point(self, px, py):
+        a = abs(self.x - px)
+        b = abs(self.y - py)
+        return math.sqrt(a**2 + b**2)
     
     def member_of(self, *groups):
         for group in self.group:
@@ -436,10 +443,10 @@ class EntityContainer(object):
     def clear(self):
         del self.entities[:]
 
-    def get_group(self, group):
+    def get_group(self, *groups):
         ents = []
         for e in self.entities:
-            if e.member_of(group):
+            if e.member_of(*groups):
                 ents.append(e)
         return ents
 
@@ -506,13 +513,13 @@ class Scene(object):
         return
 
     def exit(self):
-        return
+        self.entities.clear()
 
     def update(self):
-        return
+        self.entities.update()
 
     def render(self):
-        return
+        self.entities.render()
 
 class World(object):
     """
@@ -521,7 +528,7 @@ class World(object):
 
     def __init__(self, name):
         self.name = name
-        self.entities = EntityContainer()
+        self.scene = Scene(self)
         self.state = None
         self.states = {}
 
@@ -552,13 +559,16 @@ class World(object):
         return
 
     def close(self):
-        self.entities.clear()
+        if self.scene is not None:
+            self.scene.exit()
+            self.scene = None
         if self.state is not None:
             self.state.exit(None)
+            self.state = None
 
     def update(self):
-        self.entities.update()
+        self.scene.update()
 
     def render(self):
-        self.entities.render()
+        self.scene.render()
 

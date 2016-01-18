@@ -17,6 +17,42 @@ font = None
 translate_x = 0
 translate_y = 0
 
+def draw_arc(x, y, r, start, end):
+    alpha = False
+    try:
+        alpha = color[3] < 255
+    except IndexError:
+        alpha = False
+
+    if not alpha:
+        x = int(x - translate_x)
+        y = int(y - translate_y)
+
+    points = []
+    points.append((x, y))
+    for angle in xrange(start, end):
+        rad = math.radians(angle)
+        dx = math.cos(rad) * r
+        dy = math.cos(rad) * r
+        points.append((x + dx, y + dy))
+
+    if alpha:
+        draw_polygon(points)
+    else:
+        pygame.draw.polygon(context, color, points)
+
+def draw_circle(x, y, r):
+    x = int(x - translate_x + r)
+    y = int(y - translate_y + r)
+
+    try:
+        assert color[3] < 255
+        temp = Surface((r * 2, r * 2), pygame.SRCALPHA)
+        pygame.draw.circle(temp, color, (r, r), r)
+        context.blit(temp, (x - r, y - r))
+    except (AssertionError, IndexError):
+        pygame.draw.circle(context, color, (x, y), r)
+
 def draw_image(image, x, y, args=0):
     x -= translate_x
     y -= translate_y
@@ -39,17 +75,10 @@ def draw_line(x1, y1, x2, y2):
 
     pygame.draw.line(context, color, (x1, y1), (x2, y2))
 
-def draw_circle(x, y, r):
-    x = int(x - translate_x + r)
-    y = int(y - translate_y + r)
-
-    try:
-        assert color[3] < 255
-        temp = Surface((r * 2, r * 2), pygame.SRCALPHA)
-        pygame.draw.circle(temp, color, (r, r), r)
-        context.blit(temp, (x - r, y - r))
-    except (AssertionError, IndexError):
-        pygame.draw.circle(context, color, (x, y), r)
+def draw_polygon(points):
+    temp = Surface((context.get_width(), context.get_height()), pygame.SRCALPHA)
+    pygame.draw.polygon(temp, color, points)
+    context.blit(temp, (-translate_x, -translate_y))
 
 def draw_rect(x, y, width, height):
     """
