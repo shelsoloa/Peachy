@@ -108,7 +108,7 @@ class Engine(object):
         graphics.DEFAULT_CONTEXT = self._render_surface
         graphics.set_context(self._render_surface)
 
-        graphics.set_font('assets/ProggyClean.ttf', 16)  # TODO move asset to peachy
+        graphics.set_font_by_path('assets/ProggyClean.ttf', 16)  # TODO move asset to peachy
 
     def add_world(self, world):
         self.worlds[world.name] = world
@@ -122,8 +122,10 @@ class Engine(object):
             self.world.exit()
             self.world = self.worlds[world]
             self.world.enter()
+            return self.world
         else:
             print '[WARN] World not found: {0}'.format(world)
+            return None
 
     def fullscreen(self):
         screen = pygame.display.get_surface()
@@ -158,12 +160,16 @@ class Engine(object):
         graphics.DEFAULT_CONTEXT = self._render_surface
         graphics.set_context(self._render_surface)
 
+    def preload(self):
+        return
+
     def run(self):
         game_timer = pygame.time.Clock()
         utils.Input.poll_keyboard()
 
-        running = True
+        self.preload()
 
+        running = True
         try:
             while running:
                 if self.world is not PC.world:

@@ -95,7 +95,7 @@ def draw_rect(x, y, width, height):
     except (AssertionError, IndexError):
         pygame.draw.rect(context, color, (x, y, width, height))
 
-def draw_text(text, x, y, aa=False, center=False):
+def draw_text(text, x, y, aa=True, center=False):
     text_surface = font.render(text, aa, color)
     text_rect = text_surface.get_rect()
     text_rect.x = x - translate_x
@@ -140,9 +140,12 @@ def set_context(new_context):
     context = new_context
     context_rect = context.get_rect()
 
-def set_font(font_path, point_size):
+def set_font(new_font):
     global font
+    font = new_font
 
+def set_font_by_path(font_path, point_size):
+    global font
     font = pygame.font.Font(font_path, point_size)
 
 def rotate(image, degree):
