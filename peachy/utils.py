@@ -393,10 +393,19 @@ class Stage(object):
 
         # Load tilesets
         for tileset_raw in stage_raw.getElementsByTagName('tileset'):
-
             tileset = stage._Tileset()
-            tileset.name = tileset_raw.getAttribute('name')
             tileset.firstGID = int(tileset_raw.getAttribute('firstgid'))
+
+            # Parse .TSX
+            tsx_source = tileset_raw.getAttribute('source')
+            if tsx_source:
+                tsx_xml = open_xml(os.path.join(asset_path, tsx_source))
+                if tsx_xml is None:
+                    raise IOError("[ERROR] Could not load tileset: {0}".format(tsx_source))
+                else:
+                    tileset_raw = tsx_xml.getElementsByTagName('tileset')[0]
+            
+            tileset.name = tileset_raw.getAttribute('name')
             tileset.tilewidth = int(tileset_raw.getAttribute('tilewidth'))
             tileset.tileheight = int(tileset_raw.getAttribute('tileheight'))
 
@@ -571,6 +580,38 @@ class Stage(object):
             self.tileheight = 0
             self.properties = {}
 
+    @staticmethod
+    def _load_tileset(stage, tileset_raw):
+        tileset = stage._Tileset()
+
+        print tileset_raw.getAttribute('tilewidth')
+
+        tileset.name = tileset_raw.getAttribute('name')
+        tileset.firstGID = int(tileset_raw.getAttribute('firstgid'))
+        tileset.tilewidth = int(tileset_raw.getAttribute('tilewidth'))
+        tileset.tileheight = int(tileset_raw.getAttribute('tileheight'))
+
+        tileset.image = peachy.assets.get_image(tileset.name)
+        if tileset.image is None:
+            image_raw = tileset_raw.getElementsByTagName('image')[0]
+            source = image_raw.getAttribute('source')
+
+            source_path = os.path.abspath(os.path.join(asset_path, source))
+            
+            tileset.image = peachy.assets.load_image(tileset.name, source_path)
+
+        stage.tileset_images += splice_image(tileset.image,
+                                            tileset.tilewidth,
+                                            tileset.tileheight)
+
+        properties = tileset_raw.getElementsByTagName('property')
+        for prop in properties:
+            property_name = prop.getAttribute('name')
+            property_value = prop.getAttribute('value')
+            tileset.properties[property_name] = property_value
+
+        stage.tilesets.append(tileset)
+        return
 
 class StagePathfindingGrid(object):
 

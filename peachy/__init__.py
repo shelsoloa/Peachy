@@ -58,6 +58,7 @@ class PC(object):
 
 
 class Engine(object):
+
     def __init__(self, view_size, title='', fps=60, scale=1, debug=False):
         self.worlds = {}
         self.world = None
@@ -73,10 +74,12 @@ class Engine(object):
         self._render_surface = None
         self._window_surface = None
 
+        plat = ''
+
         if fps <= 0:
             PC.fps = 60
         if debug:
-            print platform.system()
+            plat = platform.system()
 
         # initialize pygame
         os.environ['SDL_VIDEO_CENTERED'] = "1" 
@@ -85,7 +88,8 @@ class Engine(object):
             pygame.display.init()
             pygame.font.init()
             # pygame.joystick.init()
-            pygame.mixer.init(44100, 16, 2, 512)
+            if plat != 'Linux':
+                pygame.mixer.init(44100, 16, 2, 512)
         except Exception:
             if pygame.display.get_init() is None or \
                pygame.font.get_init() is None:
@@ -108,7 +112,7 @@ class Engine(object):
         graphics.DEFAULT_CONTEXT = self._render_surface
         graphics.set_context(self._render_surface)
 
-        graphics.set_font_by_path('assets/ProggyClean.ttf', 16)  # TODO move asset to peachy
+        graphics.set_font_by_path('fonts/ProggyClean.ttf', 16)  # TODO move asset to peachy
 
     def add_world(self, world):
         self.worlds[world.name] = world
@@ -204,13 +208,15 @@ class Engine(object):
                     pygame.display.set_caption(PC.title + ' {' + str(fps) + '}')
             
             self.shutdown()
+            pygame.event.get() # Throw away any pending events
+            pygame.mixer.quit() 
             pygame.quit()
-
+        
         except:
             import traceback
             print "[ERROR] Unexpected error. {0} shutting down.".format(PC.title)
             traceback.print_exc()
-            sys.exit()
+        sys.exit()
 
     def shutdown(self):
         for _, world in self.worlds.iteritems():
