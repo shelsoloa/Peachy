@@ -44,9 +44,16 @@ class PC(object):
     height = 0
 
     engine = None
-    world = None
 
     debug = False
+
+    @property
+    def world(self):
+        return PC.engine.world
+    
+    @property
+    def scene(self):
+        return PC.engine.world.scene
 
     @staticmethod
     def set_title(title):
@@ -112,7 +119,7 @@ class Engine(object):
         graphics.DEFAULT_CONTEXT = self._render_surface
         graphics.set_context(self._render_surface)
 
-        graphics.set_font_by_path('fonts/ProggyClean.ttf', 16)  # TODO move asset to peachy
+        graphics.__font = graphics.Font('fonts/ProggyClean.ttf', 16)
 
     def add_world(self, world):
         self.worlds[world.name] = world

@@ -6,6 +6,12 @@ import peachy.graphics
 import peachy.assets
 from pygame.locals import *
 
+class Point(object):
+    def __init__(self, x=0, y=0):
+        self.x = x
+        self.y = y
+    def __str__(self):
+        return "({0}, {1})".format(self.x, self.y)
 
 def save_data(data, file_name):
     _file = None
@@ -476,6 +482,7 @@ class Stage(object):
                 obj = stage._Object()
                 obj.group = group
                 obj.name = object_raw.getAttribute('name')
+                obj.type = object_raw.getAttribute('type')
                 obj.x = int(object_raw.getAttribute('x'))
                 obj.y = int(object_raw.getAttribute('y'))
 

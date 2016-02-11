@@ -1,32 +1,50 @@
 import os
 import pygame
+
 from pygame import Surface
-from peachy.utils import splice_image
+from pygame.font import Font
+
+from peachy.utils import Point, splice_image
 
 FLIP_X = 0x01
 FLIP_Y = 0x02
 
 DEFAULT_CONTEXT = None  # A constant that holds the main render context
 
-context = None
-context_rect = None
+__context = None
+__context_rect = None
+__translation = Point()
 
-color = pygame.Color(0, 0, 0)
-font = None
+__color = pygame.Color(0, 0, 0)
+__font = None
 
-translate_x = 0
-translate_y = 0
+
+""" Drawing """
+
+def draw(image, x, y, args=0):
+    x -= __translation.x
+    y -= __translation.y
+    
+    bounds = image.get_rect().move(x, y)
+
+    if bounds.colliderect(__context_rect):
+        if args & FLIP_X:
+            image = pygame.transform.flip(image, True, False)
+        if args & FLIP_Y:
+            image = pygame.transform.flip(image, False, True)
+
+        __context.blit(image, (x, y))
 
 def draw_arc(x, y, r, start, end):
     alpha = False
     try:
-        alpha = color[3] < 255
+        alpha = __color[3] < 255
     except IndexError:
         alpha = False
 
     if not alpha:
-        x = int(x - translate_x)
-        y = int(y - translate_y)
+        x = int(x - __translation.x)
+        y = int(y - __translation.y)
 
     points = []
     points.append((x, y))
@@ -39,137 +57,154 @@ def draw_arc(x, y, r, start, end):
     if alpha:
         draw_polygon(points)
     else:
-        pygame.draw.polygon(context, color, points)
+        pygame.draw.polygon(__context, __color, points)
 
 def draw_circle(x, y, r):
-    x = int(x - translate_x + r)
-    y = int(y - translate_y + r)
+    x = int(x - __translation.x + r)
+    y = int(y - __translation.y + r)
 
     try:
-        assert color[3] < 255
+        assert __color[3] < 255
         temp = Surface((r * 2, r * 2), pygame.SRCALPHA)
-        pygame.draw.circle(temp, color, (r, r), r)
-        context.blit(temp, (x - r, y - r))
+        pygame.draw.circle(temp, __color, (r, r), r)
+        __context.blit(temp, (x - r, y - r))
     except (AssertionError, IndexError):
-        pygame.draw.circle(context, color, (x, y), r)
-
-def draw_image(image, x, y, args=0):
-    x -= translate_x
-    y -= translate_y
-    
-    bounds = image.get_rect().move(x, y)
-
-    if bounds.colliderect(context_rect):
-        if args & FLIP_X:
-            image = pygame.transform.flip(image, True, False)
-        if args & FLIP_Y:
-            image = pygame.transform.flip(image, False, True)
-
-        context.blit(image, (x, y))
+        pygame.draw.circle(__context, __color, (x, y), r)
 
 def draw_line(x1, y1, x2, y2):
-    x1 -= translate_x
-    y1 -= translate_y
-    x2 -= translate_x
-    y2 -= translate_y
+    x1 -= __translation.x
+    x2 -= __translation.x
+    y1 -= __translation.y
+    y2 -= __translation.y
 
-    pygame.draw.line(context, color, (x1, y1), (x2, y2))
+    pygame.draw.line(__context, __color, (x1, y1), (x2, y2))
 
 def draw_polygon(points):
-    temp = Surface((context.get_width(), context.get_height()), pygame.SRCALPHA)
-    pygame.draw.polygon(temp, color, points)
-    context.blit(temp, (-translate_x, -translate_y))
+    temp = Surface((__context.get_width(), __context.get_height()), pygame.SRCALPHA)
+    pygame.draw.polygon(temp, __color, points)
+    __context.blit(temp, (-__translation.x, -__translate.y))
 
 def draw_rect(x, y, width, height):
     """
-    Draw a rectangle using the color previously specified by set_color
+    Draw a rectangle using the __color previously specified by set___color
     """
-    x -= translate_x
-    y -= translate_y
+    x -= __translation.x
+    y -= __translation.y
 
     try:
-        assert color[3] < 255
+        assert __color[3] < 255
         temp = Surface((width, height), pygame.SRCALPHA)
-        temp.fill(color)
-        context.blit(temp, (x, y))
+        temp.fill(__color)
+        __context.blit(temp, (x, y))
     except (AssertionError, IndexError):
-        pygame.draw.rect(context, color, (x, y, width, height))
+        pygame.draw.rect(__context, __color, (x, y, width, height))
 
 def draw_text(text, x, y, aa=True, center=False):
-    text_surface = font.render(text, aa, color)
+    text_surface = __font.render(text, aa, __color)
     text_rect = text_surface.get_rect()
-    text_rect.x = x - translate_x
-    text_rect.y = y - translate_y
+    text_rect.x = x - __translation.x
+    text_rect.y = y - __translation.y
 
     if center:
-        text_rect.centerx = context_rect.centerx
+        text_rect.centerx = __context_rect.centerx
 
-    context.blit(text_surface, text_rect)
+    __context.blit(text_surface, text_rect)
+
+""" Image Creation """
+
+def get_image(asset_name):
+    image = Storage.images.get(asset_name)
+    if image is None:
+        return _load_image('', asset_name, False)
+    else:
+        return image
+
+def get_font(asset_name):
+    return Storage.fonts.get(asset_name)
+
+def _load_image(asset_name, path, store=True):
+    """Retrieves an image from the HDD"""
+    # path = path.lstrip('../')  # cannot rise outside of asset_path
+
+    try:
+        image = pygame.image.load(path)
+        image.convert_alpha()
+        if store:
+            Storage.images[asset_name] = image
+        return image
+    except IOError:
+        print '[ERROR] could not find Image: ' + path
+        return None
+    except pygame.error:
+        print '[ERROR] could not load Image: ' + path
+        return None
+
+def load_font(asset_name, path, point_size, store=True):
+    """Retrieves a font from the HDD"""
+
+    path = path.lstrip('../')  # cannot rise outside of asset_path
+
+    try:
+        font = pygame.font.Font(path, point_size)
+        if store:
+            Storage.fonts[asset_name] = font
+        return font
+    except IOError:
+        # TODO incorporate default font
+        print '[ERROR] could not find Font: ' + path
+        return None
+
+
+""" State Modification """
 
 def reset_context():
-    global context
-    global context_rect
-    global translate_x
-    global translate_y
+    global __context
+    global __context_rect
+    global __translation
 
-    context = DEFAULT_CONTEXT
-    context_rect = DEFAULT_CONTEXT.get_rect()
-    translate_x = 0
-    translate_y = 0
+    __context = DEFAULT_CONTEXT
+    __context_rect = DEFAULT_CONTEXT.get_rect()
+    __translation.x = 0
+    __translation.y = 0
 
 def set_color(r, g, b, a=255):
-    global color
+    global __color
 
     if (0 <= r <= 255) and (0 <= g <= 255) and (0 <= b <= 255) and (0 <= a <= 255):
         # TODO fix alpha
-        color = pygame.Color(r, g, b, a)
+        __color = pygame.Color(r, g, b, a)
 
 def set_color_hex(val):
     # (#ffffff) -> (255, 255, 255)
     val = val.lstrip('#')
     lv = len(val)
     # Hell if I know how this works...
-    color = tuple(int(val[i:i + lv // 3], 16) for i in range(0, lv, lv // 3))
+    __color = tuple(int(val[i:i + lv // 3], 16) for i in range(0, lv, lv // 3))
 
-    set_color(*color)
+    set_color(*__color)
 
 def set_context(new_context):
-    global context
-    global context_rect
+    global __context
+    global __context_rect
 
-    context = new_context
-    context_rect = context.get_rect()
+    __context = new_context
+    __context_rect = __context.get_rect()
 
 def set_font(new_font):
-    global font
-    font = new_font
+    global __font
+    __font = new_font
 
-def set_font_by_path(font_path, point_size):
-    global font
-    font = pygame.font.Font(font_path, point_size)
-
-def rotate(image, degree):
-    return pygame.transform.rotate(image, degree)
-
-def scale(image, scale):
-    x, y, w, h = image.get_rect()
-    return pygame.transform.scale(image, (w * scale, h * scale))
+# def rotate(image, degree):
+#    return pygame.transform.rotate(image, degree)
+# def scale(image, scale):
+#    x, y, w, h = image.get_rect()
+#    return pygame.transform.scale(image, (w * scale, h * scale))
 
 def translate(x, y):
-    global translate_x
-    global translate_y
+    global __translation
 
-    translate_x = x
-    translate_y = y
-
-def translate_center(x, y):
-    global translate_x
-    global translate_y
-
-    half_vw, half_vh = [v / 2 for v in pc.view_size]
-    translate_x = x - half_vw
-    translate_y = y - half_vh
-
+    __translation.x = x
+    __translation.y = y
 
 class SpriteMap(object):
 
@@ -194,8 +229,9 @@ class SpriteMap(object):
         self.frame_width = frame_width
         self.frame_height = frame_height
 
-        self.origin_x = origin_x
-        self.origin_y = origin_y
+        self.origin = Point(origin_x, origin_y)
+        # self.origin_x = origin_x
+        # self.origin_y = origin_y
 
     def add(self, name, frames, frame_rate=0, loops=False, callback=None, origin=(0,0)):
         animation = {
