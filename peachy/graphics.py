@@ -4,7 +4,8 @@ import pygame
 from pygame import Surface
 from pygame.font import Font
 
-from peachy.utils import Point, splice_image
+from peachy import PC
+from peachy.utils import Point
 
 FLIP_X = 0x01
 FLIP_Y = 0x02
@@ -59,6 +60,9 @@ def draw_arc(x, y, r, start, end):
     else:
         pygame.draw.polygon(__context, __color, points)
 
+def draw_entity_rect(entity):
+    draw_rect(entity.x, entity.y, entity.width, entity.height)
+
 def draw_circle(x, y, r):
     x = int(x - __translation.x + r)
     y = int(y - __translation.y + r)
@@ -82,7 +86,7 @@ def draw_line(x1, y1, x2, y2):
 def draw_polygon(points):
     temp = Surface((__context.get_width(), __context.get_height()), pygame.SRCALPHA)
     pygame.draw.polygon(temp, __color, points)
-    __context.blit(temp, (-__translation.x, -__translate.y))
+    __context.blit(temp, (-__translation.x, -__translation.y))
 
 def draw_rect(x, y, width, height):
     """
@@ -99,8 +103,11 @@ def draw_rect(x, y, width, height):
     except (AssertionError, IndexError):
         pygame.draw.rect(__context, __color, (x, y, width, height))
 
-def draw_text(text, x, y, aa=True, center=False):
-    text_surface = __font.render(text, aa, __color)
+def draw_text(text, x, y, aa=True, center=False, font=None):
+    if font:
+        text_surface = font.render(text, aa, __color)
+    else:
+        text_surface = __font.render(text, aa, __color)
     text_rect = text_surface.get_rect()
     text_rect.x = x - __translation.x
     text_rect.y = y - __translation.y
@@ -110,52 +117,11 @@ def draw_text(text, x, y, aa=True, center=False):
 
     __context.blit(text_surface, text_rect)
 
-""" Image Creation """
-
-def get_image(asset_name):
-    image = Storage.images.get(asset_name)
-    if image is None:
-        return _load_image('', asset_name, False)
-    else:
-        return image
-
-def get_font(asset_name):
-    return Storage.fonts.get(asset_name)
-
-def _load_image(asset_name, path, store=True):
-    """Retrieves an image from the HDD"""
-    # path = path.lstrip('../')  # cannot rise outside of asset_path
-
-    try:
-        image = pygame.image.load(path)
-        image.convert_alpha()
-        if store:
-            Storage.images[asset_name] = image
-        return image
-    except IOError:
-        print '[ERROR] could not find Image: ' + path
-        return None
-    except pygame.error:
-        print '[ERROR] could not load Image: ' + path
-        return None
-
-def load_font(asset_name, path, point_size, store=True):
-    """Retrieves a font from the HDD"""
-
-    path = path.lstrip('../')  # cannot rise outside of asset_path
-
-    try:
-        font = pygame.font.Font(path, point_size)
-        if store:
-            Storage.fonts[asset_name] = font
-        return font
-    except IOError:
-        # TODO incorporate default font
-        print '[ERROR] could not find Font: ' + path
-        return None
-
 
 """ State Modification """
+
+def font():
+    return __font
 
 def reset_context():
     global __context
@@ -178,7 +144,7 @@ def set_color_hex(val):
     # (#ffffff) -> (255, 255, 255)
     val = val.lstrip('#')
     lv = len(val)
-    # Hell if I know how this works...
+    # Hell if I know how this works... Thanks Stack Overflow
     __color = tuple(int(val[i:i + lv // 3], 16) for i in range(0, lv, lv // 3))
 
     set_color(*__color)
@@ -194,17 +160,42 @@ def set_font(new_font):
     global __font
     __font = new_font
 
-# def rotate(image, degree):
-#    return pygame.transform.rotate(image, degree)
-# def scale(image, scale):
-#    x, y, w, h = image.get_rect()
-#    return pygame.transform.scale(image, (w * scale, h * scale))
-
 def translate(x, y):
     global __translation
 
     __translation.x = x
     __translation.y = y
+
+""" Image Manip """
+
+def rotate(image, degree):
+    return pygame.transform.rotate(image, degree)
+
+def scale(image, scale):
+    x, y, w, h = image.get_rect()
+    return pygame.transform.scale(image, (w * scale, h * scale))
+
+def splice(image, frame_width, frame_height, margin_x=0, margin_y=0):
+    # Arguments: image is of pygame.Surface
+    x = 0
+    y = 0
+
+    sub_images = []
+
+    src_width, src_height = image.get_size()
+
+    while x + frame_width <= src_width and y + frame_height <= src_height:
+        crop = Surface((frame_width, frame_height), flags=pygame.SRCALPHA)
+        crop.blit(image, (0, 0), (x, y, frame_width, frame_height))
+
+        sub_images.append(crop)
+
+        x += frame_width + margin_x
+        if x + frame_width > src_width:
+            x = 0
+            y += frame_height + margin_y
+
+    return sub_images
 
 class SpriteMap(object):
 
@@ -225,7 +216,7 @@ class SpriteMap(object):
 
         self.callback = None
 
-        self.frames = splice_image(source, frame_width, frame_height, margin_x, margin_y)
+        self.frames = splice(source, frame_width, frame_height, margin_x, margin_y)
         self.frame_width = frame_width
         self.frame_height = frame_height
 
@@ -246,14 +237,14 @@ class SpriteMap(object):
     def pause(self):
         self.paused = True
 
-    '''
-        Will play the animation specified by anim_name.
-        flip_x and flip_y will flip along the x or y axis respectively
-        restart will start the animation for the very beginning
-    '''
+    """
+    Will play the animation specified by anim_name.
+    flip_x and flip_y will flip along the x or y axis respectively
+    restart will start the animation for the very beginning
+    """
     def play(self, anim_name, flip_x=False, flip_y=False, restart=False):
         if anim_name in self.animations:
-            if self.name != anim_name or self.flipped_x != flip_x and \
+            if self.name != anim_name or self.flipped_x != flip_x or \
                self.flipped_y != flip_y or restart:
                 self.name = anim_name
                 self.flipped_x = flip_x
@@ -280,7 +271,7 @@ class SpriteMap(object):
                 args = args | FLIP_X
             if self.flipped_y:
                 args = args | FLIP_Y
-            draw_image(self.frames[frame], x, y, args)
+            draw(self.frames[frame], x, y, args)
 
     def resume(self):
         self.paused = False

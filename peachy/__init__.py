@@ -1,3 +1,4 @@
+from __future__ import print_function
 import math 
 import os
 import platform
@@ -6,32 +7,17 @@ import sys
 import pygame
 from pygame.locals import *
 
-import graphics
-import assets
-import utils
-
-if __debug__:
-    def debug_draw_grid(cell_width, cell_height, offset_x=0, offset_y=0):
-        view_width, view_height = PC.view_size
-        
-        x = offset_x
-        y = offset_y
-
-        while x < view_width:
-            graphics.draw_line(x, offset_y, x, view_height)
-            x += cell_width
-
-        while y < view_height:
-            graphics.draw_line(offset_x, y, view_width, y)
-            y += cell_height
-
+def DEBUG(*objs):
+    print("[DEBUG]", *objs, file=sys.stderr)
 
 class PC(object):
     """
     PC (Peachy Controller)
-
-    This is the central controlling class for the Peachy framework. This class
-    controls the window, world, and entity room.
+    This is the central access point for classes within the Peachy framework. 
+    This class contains references to the window, world, and entity room. Its
+    values are set after startup. 
+    This is the only class that can be accessed by submodules within the Peachy
+    framework.
     """
 
     fps = 0
@@ -44,6 +30,7 @@ class PC(object):
     height = 0
 
     engine = None
+    resources = {}
 
     debug = False
 
@@ -56,13 +43,13 @@ class PC(object):
         return PC.engine.world.scene
 
     @staticmethod
-    def set_title(title):
-        pygame.display.set_caption(title)
-
-    @staticmethod
     def quit():
         pygame.event.post(pygame.event.Event(QUIT))
 
+
+import fs
+import graphics
+import utils
 
 class Engine(object):
 
@@ -100,10 +87,10 @@ class Engine(object):
         except Exception:
             if pygame.display.get_init() is None or \
                pygame.font.get_init() is None:
-                print "Could not initialize pygame core. Aborting."
+                print("Could not initialize pygame core. Aborting.")
                 return -1
             else:
-                print "Could not initialize pygame modules"
+                print("Could not initialize pygame modules")
 
         # General initialization
         pygame.display.set_caption(title)
@@ -119,7 +106,10 @@ class Engine(object):
         graphics.DEFAULT_CONTEXT = self._render_surface
         graphics.set_context(self._render_surface)
 
-        graphics.__font = graphics.Font('fonts/ProggyClean.ttf', 16)
+        try:
+            graphics.__font = graphics.Font('peachy/fonts/ProggyClean.ttf', 16)
+        except IOError:
+            utils.DEBUG("Debug font not found")
 
     def add_world(self, world):
         self.worlds[world.name] = world
@@ -135,8 +125,12 @@ class Engine(object):
             self.world.enter()
             return self.world
         else:
-            print '[WARN] World not found: {0}'.format(world)
+            DEBUG('World not found: {0}'.format(world))
             return None
+
+    def set_title(self, title):
+        PC.title = title
+        pygame.display.set_caption(title)
 
     def fullscreen(self):
         screen = pygame.display.get_surface()
@@ -221,7 +215,7 @@ class Engine(object):
         
         except:
             import traceback
-            print "[ERROR] Unexpected error. {0} shutting down.".format(PC.title)
+            print("[ERROR] Unexpected error. {0} shutting down.".format(PC.title))
             traceback.print_exc()
         sys.exit()
 
@@ -523,22 +517,67 @@ class State(object):
 
 
 class Scene(object):
-
     def __init__(self, world):
+        self.entities = []
         self.world = world
-        self.entities = EntityContainer()
-    
+
+    def __contains__(self, item):
+        return item in self.entities
+
+    def __iter__(self):
+        return self.entities.__iter__()
+
     def load(self):
         return
 
-    def exit(self):
-        self.entities.clear()
+    def add(self, entity):
+        entity.container = self
+        self.entities.append(entity)
+        return entity
 
-    def update(self):
-        self.entities.update()
+    def clear(self):
+        del self.entities[:]
+
+    def get_group(self, *groups):
+        ents = []
+        for e in self.entities:
+            if e.member_of(*groups):
+                ents.append(e)
+        return ents
+
+    def get_name(self, name):
+        for e in self.entities:
+            if e.name == name:
+                return e
+        return None
+
+    def remove(self, entity):
+        try:
+            self.entities.remove(entity)
+        except ValueError:
+            pass  # Do nothing
+
+    def remove_group(self, group):
+        for entity in self.entities:
+            if entity.member_of(group):
+                self.entities.remove(entity)
+
+    def remove_name(self, entity_name):
+        for entity in self.entities:
+            if entity.name == entity_name:
+                self.entities.remove(entity)
+                break
 
     def render(self):
-        self.entities.render()
+        for entity in self.entities:
+            if entity.visible:
+                entity.render()
+
+    def update(self):
+        for entity in self.entities:
+            if entity.active:
+                entity.update()
+
 
 class World(object):
     """
@@ -568,8 +607,10 @@ class World(object):
             
             self.state = incoming_state
         else:
-            print state_name in self.states
-            print '[ERROR] change_state request invalid'
+            DEBUG('[ERROR] {0} state ({1}) not found', self.name, state_name)
+
+    def load(self):
+        return
 
     def enter(self):
         return
@@ -579,7 +620,7 @@ class World(object):
 
     def close(self):
         if self.scene is not None:
-            self.scene.exit()
+            self.scene.clear()
             self.scene = None
         if self.state is not None:
             self.state.exit(None)

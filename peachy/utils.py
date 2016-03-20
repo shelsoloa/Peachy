@@ -1,10 +1,10 @@
 import os
-import pickle
 import pygame
 import xml.dom.minidom
-import peachy.graphics
-import peachy.assets
 from pygame.locals import *
+
+import peachy
+from peachy import DEBUG
 
 class Point(object):
     def __init__(self, x=0, y=0):
@@ -13,54 +13,6 @@ class Point(object):
     def __str__(self):
         return "({0}, {1})".format(self.x, self.y)
 
-def save_data(data, file_name):
-    _file = None
-    try:
-        _file = open(file_name, 'wb')
-        pickle.dump(data, _file)
-        _file.close()
-    except (IOError, pickle.PickleError):
-        if _file is not None:
-            _file.close()
-        raise
-
-
-def load_data(file_name):
-    _file = None
-    saved_data = None
-    try:
-        _file = open(file_name, 'rb')
-        saved_data = pickle.load(_file)
-        _file.close()
-    except (IOError, pickle.PickleError):
-        if _file is not None:
-            _file.close()
-        raise
-    return saved_data
-
-
-def splice_image(image, frame_width, frame_height, margin_x=0, margin_y=0):
-    x = 0
-    y = 0
-
-    sub_images = []
-
-    src_width, src_height = image.get_size()
-
-    while x + frame_width <= src_width and y + frame_height <= src_height:
-        crop = pygame.Surface((frame_width, frame_height), flags=pygame.SRCALPHA)
-        crop.blit(image, (0, 0), (x, y, frame_width, frame_height))
-
-        sub_images.append(crop)
-
-        x += frame_width + margin_x
-        if x + frame_width > src_width:
-            x = 0
-            y += frame_height + margin_y
-
-    return sub_images
-
-
 def open_xml(path):
     try:
         xml_file = open(path, 'r')
@@ -68,7 +20,7 @@ def open_xml(path):
         xml_file.close()
         return xml.dom.minidom.parseString(data)
     except IOError:
-        print '[ERROR] could not load xml file: ' + path
+        DEBUG('[ERROR] could not load xml file: ' + path)
 
 
 class Camera(object):
@@ -415,16 +367,16 @@ class Stage(object):
             tileset.tilewidth = int(tileset_raw.getAttribute('tilewidth'))
             tileset.tileheight = int(tileset_raw.getAttribute('tileheight'))
 
-            tileset.image = peachy.assets.get_image(tileset.name)
-            if tileset.image is None:
+            try:
+                tileset.image = peachy.fs.get_image(tileset.name)
+            except IOError:
                 image_raw = tileset_raw.getElementsByTagName('image')[0]
                 source = image_raw.getAttribute('source')
-
                 source_path = os.path.abspath(os.path.join(asset_path, source))
                 
-                tileset.image = peachy.assets.load_image(tileset.name, source_path)
+                tileset.image = peachy.fs.load_image(tileset.name, source_path)
 
-            stage.tileset_images += splice_image(tileset.image,
+            stage.tileset_images += peachy.graphics.splice(tileset.image,
                                                 tileset.tilewidth,
                                                 tileset.tileheight)
 
@@ -486,6 +438,16 @@ class Stage(object):
                 obj.x = int(object_raw.getAttribute('x'))
                 obj.y = int(object_raw.getAttribute('y'))
 
+                try:
+                    obj.w = int(object_raw.getAttribute('width'))
+                except ValueError:
+                    obj.w = 0
+
+                try:
+                    obj.h = int(object_raw.getAttribute('height'))
+                except ValueError:
+                    obj.h = 0
+
                 polygon = object_raw.getElementsByTagName('polygon')
                 polyline = object_raw.getElementsByTagName('polyline')
                 if polygon:
@@ -494,17 +456,6 @@ class Stage(object):
                 elif polyline:
                     obj.is_polygon = True
                     obj.polygon_points = stage.parse_tiled_polygon(polyline)
-                else:
-                    try:
-                        obj.w = int(object_raw.getAttribute('width'))
-                    except ValueError:
-                        obj.w = 0
-
-                    try:
-                        obj.h = int(object_raw.getAttribute('height'))
-                    except ValueError:
-                        obj.h = 0
-
 
                 properties = object_raw.getElementsByTagName('property')
                 for prop in properties:
@@ -520,7 +471,10 @@ class Stage(object):
         points = []
         points_raw = polygon[0].getAttribute('points').split()
         for raw_point in points_raw:
-            points.append(map(int, raw_point.split(',')))
+            raw_point = raw_point.split(',')
+            p = Point(int(raw_point[0]), int(raw_point[1]))
+            points.append(p)
+            # points.append(map(int, raw_point.split(',')))
         return points
 
     def render(self):
@@ -544,10 +498,10 @@ class Stage(object):
 
         try:
             for tile in layer.tiles:
-                peachy.graphics.draw_image(self.tileset_images[tile.gid - 1], 
+                peachy.graphics.draw(self.tileset_images[tile.gid - 1], 
                     tile.x, tile.y)
         except AttributeError:
-            print '[ERROR] Layer could not be rendered ' + layer
+            DEBUG('[ERROR] Layer could not be rendered ' + layer)
 
 
     class _Layer(object):
@@ -587,25 +541,27 @@ class Stage(object):
             self.tileheight = 0
             self.properties = {}
 
+    ''' 
+    * Not sure if this function is required.     *
+    * Temporarily commented out pending removal. *
+    
     @staticmethod
     def _load_tileset(stage, tileset_raw):
         tileset = stage._Tileset()
-
-        print tileset_raw.getAttribute('tilewidth')
 
         tileset.name = tileset_raw.getAttribute('name')
         tileset.firstGID = int(tileset_raw.getAttribute('firstgid'))
         tileset.tilewidth = int(tileset_raw.getAttribute('tilewidth'))
         tileset.tileheight = int(tileset_raw.getAttribute('tileheight'))
 
-        tileset.image = peachy.assets.get_image(tileset.name)
-        if tileset.image is None:
+        try:
+            tileset.image = peachy.graphics.get_image(tileset.name)
+        except IOError:
             image_raw = tileset_raw.getElementsByTagName('image')[0]
             source = image_raw.getAttribute('source')
-
             source_path = os.path.abspath(os.path.join(asset_path, source))
-            
-            tileset.image = peachy.assets.load_image(tileset.name, source_path)
+
+            tileset.image = peachy.graphics._load_image(tileset.name, source_path)
 
         stage.tileset_images += splice_image(tileset.image,
                                             tileset.tilewidth,
@@ -619,6 +575,7 @@ class Stage(object):
 
         stage.tilesets.append(tileset)
         return
+    '''
 
 class StagePathfindingGrid(object):
 

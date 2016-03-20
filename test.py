@@ -29,7 +29,7 @@ class Nub(peachy.Entity):
 
 game = Engine((320, 240), 'Game')
 world = game.add_world(World('Play'))
-world.entities.add(Nub(100, 100))
+world.scene.add(Nub(100, 100))
 game.run()
 
 # PC.init((320, 240), fps=60, scale=2, debug=True)
