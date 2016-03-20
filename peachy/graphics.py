@@ -2,7 +2,7 @@ import os
 import pygame
 
 from pygame import Surface
-from pygame.font import Font
+from pygame.freetype import Font
 
 from peachy import PC
 from peachy.utils import Point
@@ -105,10 +105,9 @@ def draw_rect(x, y, width, height):
 
 def draw_text(text, x, y, aa=True, center=False, font=None):
     if font:
-        text_surface = font.render(text, aa, __color)
+        text_surface, text_rect = font.render(text, __color)
     else:
-        text_surface = __font.render(text, aa, __color)
-    text_rect = text_surface.get_rect()
+        text_surface, text_rect = __font.render(text, __color)
     text_rect.x = x - __translation.x
     text_rect.y = y - __translation.y
 

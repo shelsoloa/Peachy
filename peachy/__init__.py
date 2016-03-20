@@ -1,4 +1,3 @@
-from __future__ import print_function
 import math 
 import os
 import platform
@@ -47,9 +46,9 @@ class PC(object):
         pygame.event.post(pygame.event.Event(QUIT))
 
 
-import fs
-import graphics
-import utils
+import peachy.fs as fs
+import peachy.graphics as graphics
+import peachy.utils as utils
 
 class Engine(object):
 
@@ -80,7 +79,7 @@ class Engine(object):
 
         try:
             pygame.display.init()
-            pygame.font.init()
+            pygame.freetype.init()
             # pygame.joystick.init()
             if plat != 'Linux':
                 pygame.mixer.init(44100, 16, 2, 512)
@@ -220,7 +219,7 @@ class Engine(object):
         sys.exit()
 
     def shutdown(self):
-        for _, world in self.worlds.iteritems():
+        for _, world in self.worlds.items():
             world.close()
     
 
