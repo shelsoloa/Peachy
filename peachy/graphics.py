@@ -2,6 +2,7 @@ import os
 import pygame
 
 from pygame import Surface
+from pygame import gfxdraw
 from pygame.freetype import Font
 
 from peachy import PC
@@ -18,7 +19,6 @@ __translation = Point()
 
 __color = pygame.Color(0, 0, 0)
 __font = None
-
 
 """ Drawing """
 
@@ -83,15 +83,18 @@ def draw_line(x1, y1, x2, y2):
 
     pygame.draw.line(__context, __color, (x1, y1), (x2, y2))
 
-def draw_polygon(points):
-    temp = Surface((__context.get_width(), __context.get_height()), pygame.SRCALPHA)
-    pygame.draw.polygon(temp, __color, points)
-    __context.blit(temp, (-__translation.x, -__translation.y))
+def draw_polygon(points, aa=False):
+    if aa:
+        gfxdraw.filled_polygon(__context, points, __color)
+        gfxdraw.aapolygon(__context, points, __color)
+    else:
+        temp = Surface((__context.get_width(), __context.get_height()), pygame.SRCALPHA)
+        pygame.draw.polygon(temp, __color, points)
+        __context.blit(temp, (-__translation.x, -__translation.y))
+
 
 def draw_rect(x, y, width, height):
-    """
-    Draw a rectangle using the __color previously specified by set___color
-    """
+    """ Draw a rectangle """
     x -= __translation.x
     y -= __translation.y
 
@@ -102,6 +105,36 @@ def draw_rect(x, y, width, height):
         __context.blit(temp, (x, y))
     except (AssertionError, IndexError):
         pygame.draw.rect(__context, __color, (x, y, width, height))
+
+def draw_rounded_rect(x, y, width, height, radius):
+    """ Draw a rectangle with rounded corners """
+    rect = pygame.Rect(x, y, width, height)
+    color = pygame.Color(*__color)
+    alpha = color.a
+    color.a = 0
+    pos = rect.topleft
+    rect.topleft = (0, 0)
+    rectangle = Surface(rect.size, pygame.SRCALPHA)
+
+    circle = Surface([min(rect.size) * 3] * 2, pygame.SRCALPHA)
+    pygame.draw.ellipse(circle, (0, 0, 0), circle.get_rect(), 0)
+    circle = pygame.transform.smoothscale(circle, [int(min(rect.size) * radius)] * 2)
+    
+    radius = rectangle.blit(circle, (0, 0))
+    radius.bottomright = rect.bottomright
+    rectangle.blit(circle, radius)
+    radius.topright = rect.topright
+    rectangle.blit(circle, radius)
+    radius.bottomleft = rect.bottomleft
+    rectangle.blit(circle, radius)
+
+    rectangle.fill((0, 0, 0), rect.inflate(-radius.w, 0))
+    rectangle.fill((0, 0, 0), rect.inflate(0, -radius.h))
+
+    rectangle.fill(color, special_flags=pygame.BLEND_RGBA_MAX)
+    rectangle.fill((255, 255, 255, alpha), special_flags=pygame.BLEND_RGBA_MIN)
+
+    __context.blit(rectangle, pos)
 
 def draw_text(text, x, y, aa=True, center=False, font=None):
     if font:
@@ -118,6 +151,7 @@ def draw_text(text, x, y, aa=True, center=False, font=None):
 
 
 """ State Modification """
+# TODO Only apply transformations to current context and subcontexts
 
 def font():
     return __font
@@ -131,6 +165,9 @@ def reset_context():
     __context_rect = DEFAULT_CONTEXT.get_rect()
     __translation.x = 0
     __translation.y = 0
+
+def rgb_to_hex(color):
+    return '%02x%02x%02x' % (color.r, color.g, color.b)
 
 def set_color(r, g, b, a=255):
     global __color
@@ -159,11 +196,15 @@ def set_font(new_font):
     global __font
     __font = new_font
 
-def translate(x, y):
+def translate(x, y, absolute=True):
     global __translation
 
-    __translation.x = x
-    __translation.y = y
+    if absolute:
+        __translation.x = x
+        __translation.y = y
+    else:
+        __translation.x += x
+        __translation.y += y
 
 """ Image Manip """
 

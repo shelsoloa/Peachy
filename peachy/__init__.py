@@ -7,7 +7,8 @@ import pygame
 from pygame.locals import *
 
 def DEBUG(*objs):
-    print("[DEBUG]", *objs, file=sys.stderr)
+    if PC.debug:
+        print("[DEBUG]", *objs, file=sys.stderr)
 
 class PC(object):
     """
@@ -29,7 +30,6 @@ class PC(object):
     height = 0
 
     engine = None
-    resources = {}
 
     debug = False
 
@@ -38,8 +38,8 @@ class PC(object):
         return PC.engine.world
     
     @property
-    def scene(self):
-        return PC.engine.world.scene
+    def stage(self):
+        return PC.engine.world.stage
 
     @staticmethod
     def quit():
@@ -49,6 +49,8 @@ class PC(object):
 import peachy.fs as fs
 import peachy.graphics as graphics
 import peachy.utils as utils
+import peachy.audio as audio
+import peachy.stage as stage
 
 class Engine(object):
 
@@ -78,11 +80,11 @@ class Engine(object):
         os.environ['SDL_VIDEO_CENTERED'] = "1" 
 
         try:
+            pygame.mixer.pre_init(44100, -16, 8, 512)
             pygame.display.init()
             pygame.freetype.init()
+            pygame.mixer.init()
             # pygame.joystick.init()
-            if plat != 'Linux':
-                pygame.mixer.init(44100, 16, 2, 512)
         except Exception:
             if pygame.display.get_init() is None or \
                pygame.font.get_init() is None:
@@ -172,6 +174,7 @@ class Engine(object):
         utils.Input.poll_keyboard()
 
         self.preload()
+        self.world.enter()
 
         running = True
         try:
@@ -208,7 +211,7 @@ class Engine(object):
                     pygame.display.set_caption(PC.title + ' {' + str(fps) + '}')
             
             self.shutdown()
-            pygame.event.get() # Throw away any pending events
+            pygame.event.get()  # Throw away any pending events
             pygame.mixer.quit() 
             pygame.quit()
         
@@ -220,7 +223,7 @@ class Engine(object):
 
     def shutdown(self):
         for _, world in self.worlds.items():
-            world.close()
+            world.shutdown()
     
 
 class Entity(object):
@@ -231,8 +234,6 @@ class Entity(object):
     def __init__(self, x=0, y=0):
         self.group = ''           # Every entity belongs to a group
         self.name = ''            # Unique entities have a name (1/room)
-
-        self.event_handle = None  # Used by events to access this entity, set on map load
 
         self.x = x                # x coordinate
         self.y = y                # y coordinate
@@ -346,7 +347,7 @@ class Entity(object):
 
     def collides_circle(self, circle, x=None, y=None):
         """
-        circle is tuple (x, y, radius)
+        circle = tuple (x, y, radius)
         """
         if x is None or y is None:
             x = self.x
@@ -437,65 +438,6 @@ class Entity(object):
         return
 
 
-class EntityContainer(object):
-    def __init__(self):
-        self.entities = []
-
-    def __contains__(self, item):
-        return item in self.entities
-
-    def __iter__(self):
-        return self.entities.__iter__()
-
-    def add(self, entity):
-        entity.container = self
-        self.entities.append(entity)
-        return entity
-
-    def clear(self):
-        del self.entities[:]
-
-    def get_group(self, *groups):
-        ents = []
-        for e in self.entities:
-            if e.member_of(*groups):
-                ents.append(e)
-        return ents
-
-    def get_name(self, name):
-        for e in self.entities:
-            if e.name == name:
-                return e
-        return None
-
-    def remove(self, entity):
-        try:
-            self.entities.remove(entity)
-        except ValueError:
-            pass  # Do nothing
-
-    def remove_group(self, group):
-        for entity in self.entities:
-            if entity.member_of(group):
-                self.entities.remove(entity)
-
-    def remove_name(self, entity_name):
-        for entity in self.entities:
-            if entity.name == entity_name:
-                self.entities.remove(entity)
-                break
-
-    def render(self):
-        for entity in self.entities:
-            if entity.visible:
-                entity.render()
-
-    def update(self):
-        for entity in self.entities:
-            if entity.active:
-                entity.update()
-
-
 class State(object):
 
     def __init__(self, name, world):
@@ -515,69 +457,6 @@ class State(object):
         return
 
 
-class Scene(object):
-    def __init__(self, world):
-        self.entities = []
-        self.world = world
-
-    def __contains__(self, item):
-        return item in self.entities
-
-    def __iter__(self):
-        return self.entities.__iter__()
-
-    def load(self):
-        return
-
-    def add(self, entity):
-        entity.container = self
-        self.entities.append(entity)
-        return entity
-
-    def clear(self):
-        del self.entities[:]
-
-    def get_group(self, *groups):
-        ents = []
-        for e in self.entities:
-            if e.member_of(*groups):
-                ents.append(e)
-        return ents
-
-    def get_name(self, name):
-        for e in self.entities:
-            if e.name == name:
-                return e
-        return None
-
-    def remove(self, entity):
-        try:
-            self.entities.remove(entity)
-        except ValueError:
-            pass  # Do nothing
-
-    def remove_group(self, group):
-        for entity in self.entities:
-            if entity.member_of(group):
-                self.entities.remove(entity)
-
-    def remove_name(self, entity_name):
-        for entity in self.entities:
-            if entity.name == entity_name:
-                self.entities.remove(entity)
-                break
-
-    def render(self):
-        for entity in self.entities:
-            if entity.visible:
-                entity.render()
-
-    def update(self):
-        for entity in self.entities:
-            if entity.active:
-                entity.update()
-
-
 class World(object):
     """
     State machine
@@ -585,7 +464,7 @@ class World(object):
 
     def __init__(self, name):
         self.name = name
-        self.scene = Scene(self)
+        self.stage = stage.Stage(self)
         self.state = None
         self.states = {}
 
@@ -593,6 +472,13 @@ class World(object):
         self.states[state.name] = state
         if self.state is None:
             self.state = state
+
+    def change_stage(self, stage):
+        if self.stage:
+            self.stage.clear()
+            self.stage.exit()
+        self.stage = stage
+        self.stage.enter()
 
     def change_state(self, state_name, *args):
         if state_name in self.states and \
@@ -608,26 +494,29 @@ class World(object):
         else:
             DEBUG('[ERROR] {0} state ({1}) not found', self.name, state_name)
 
-    def load(self):
-        return
-
     def enter(self):
         return
 
     def exit(self):
         return
 
-    def close(self):
-        if self.scene is not None:
-            self.scene.clear()
-            self.scene = None
-        if self.state is not None:
+    def shutdown(self):
+        try: 
+            self.stage.clear()
+            self.stage = None
+        except AttributeError: 
+            pass
+
+        try:
             self.state.exit(None)
             self.state = None
+            self.states = None
+        except AttributeError:
+            pass
 
     def update(self):
-        self.scene.update()
+        self.stage.update()
 
     def render(self):
-        self.scene.render()
+        self.stage.render()
 

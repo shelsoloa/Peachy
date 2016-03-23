@@ -1,7 +1,9 @@
 import os
 import pickle
 import pygame
+import xml.dom.minidom
 
+import peachy
 from peachy import DEBUG
 
 # TODO store every resource with a reference to filename/path
@@ -24,6 +26,14 @@ def resource_loader(f):
         return f(asset_name, path, *args, **kwargs)
     return inner
 
+def open_xml(path):
+    try:
+        xml_file = open(path, 'r')
+        data = xml_file.read()
+        xml_file.close()
+        return xml.dom.minidom.parseString(data)
+    except IOError:
+        DEBUG('[ERROR] could not load xml file: ' + path)
 
 def save_raw_data(data, file_name):
     _file = None
@@ -56,10 +66,10 @@ def get_image(asset_name):
     else:
         return image
 
-def get_font(asset_name):
+def get_font(asset_name, pt_size=-1):
     font = resources.get(asset_name)
-    if font is None:
-        return load_font('', asset_name, False)
+    if font is None and pt_size > 0:
+        return load_font('', asset_name, pt_size, False)
     else:
         return font
 
@@ -68,7 +78,7 @@ def get_sound(asset_name):
     if sound is None:
         return load_sound('', asset_name, False)
     else:
-        return font
+        return sound
 
 
 @resource_loader
@@ -89,14 +99,12 @@ def load_image(asset_name, path, store=True):
 def load_font(asset_name, path, point_size, store=True):
     """ Retrieves a font from the HDD """
     try:
-        font = pygame.freetype.Font(path, point_size)
+        font = peachy.graphics.Font(path, point_size)
         if store:
-            global resources
             resources[asset_name] = font
         return font
 
     except pygame.error:
-        # TODO incorporate default font
         DEBUG('Error loading font: ' + path)
         raise
 
@@ -105,16 +113,13 @@ def load_sound(asset_name, path, store=True):
     """ Retrieves a sound file from the HDD """
     # TODO add linux support
 
-    path = path.lstrip('../')  # cannot rise outside of asset_path
-
     try:
-        sound = pygame.mixer.Sound(path)
+        sound = peachy.audio.Sound(path)
         if store:
-            Storage.sounds[asset_name] = sound
+            resources[asset_name] = sound
         return sound
 
     except pygame.error:
         print('[ERROR] could not find Sound: ' + path)
         return None
-
 
