@@ -6,9 +6,15 @@ import sys
 import pygame
 from pygame.locals import *
 
+
 def DEBUG(*objs):
+    """ Print debug information to outstream (Only if DEBUG is active) """
     if PC.debug:
         print("[DEBUG]", *objs, file=sys.stderr)
+
+def get_version():
+    return '0.0.2'
+
 
 class PC(object):
     """
@@ -52,7 +58,13 @@ import peachy.utils as utils
 import peachy.audio as audio
 import peachy.stage as stage
 
+
 class Engine(object):
+    """
+    Engine is the main controller for Peachy and controls priority aspects of
+    the applications such as: initializing the game, running the game loop, 
+    and controlling World objects.
+    """
 
     def __init__(self, view_size, title='', fps=60, scale=1, debug=False):
         self.worlds = {}
@@ -76,7 +88,7 @@ class Engine(object):
         if debug:
             plat = platform.system()
 
-        # initialize pygame
+        # Initialize pygame
         os.environ['SDL_VIDEO_CENTERED'] = "1" 
 
         try:
@@ -84,20 +96,24 @@ class Engine(object):
             pygame.display.init()
             pygame.freetype.init()
             pygame.mixer.init()
-            # pygame.joystick.init()
+            # Joystick module prints useless dialog
+            # pygame.joystick.init()  
         except Exception:
-            if pygame.display.get_init() is None or \
-               pygame.font.get_init() is None:
-                print("Could not initialize pygame core. Aborting.")
-                return -1
-            else:
-                print("Could not initialize pygame modules")
+            if pygame.display.get_init() is None:
+                print("[ERROR] Could not initialize pygame display. Abort")
+            elif pygame.font.get_init() is None:
+                print("[ERROR] Could not initialize pygame font. About!")
+            elif pygame.freetype.get_init() is None:
+                print("[ERROR] Could not initialize pygame freetype. Abort!")
+            elif pygame.mixer.get_init() is None:
+                print("[ERROR] Could not initialize pygame mixer. Abort!")
+            return -1
 
         # General initialization
         pygame.display.set_caption(title)
         utils.Input.init()
 
-        # Init display (pygame)
+        # Initialize display (pygame)
         self.view_size = (PC.width, PC.height)
         self.window_size = (PC.width * scale, PC.height * scale)
         
@@ -111,29 +127,52 @@ class Engine(object):
             graphics.__font = graphics.Font('peachy/fonts/ProggyClean.ttf', 16)
         except IOError:
             utils.DEBUG("Debug font not found")
+            # TODO exit
 
-    def add_world(self, world):
-        self.worlds[world.name] = world
+    def add_world(self, world, name=''):
+        """
+        Adds world to the Engine.worlds list. If there are no worlds in worlds 
+        list, then this worlds is set as active.
+
+        Key for this world is name or world.name if name is left unspecified
+        """
+
+        if not name:
+            name = world.name
+
+        self.worlds[name] = world
         if self.world is None:
             self.world = world
             PC.world = self.world
-        return self.worlds[world.name]
 
-    def change_world(self, world):
-        if world in self.worlds:
+        return self.worlds[name]
+
+    def change_world(self, world_name):
+        """
+        Changes world to world specified. World must already be added through
+        add_world().
+
+        If no world is found, None is returned.
+        """
+
+        if world_name in self.worlds:
             self.world.exit()
-            self.world = self.worlds[world]
+            self.world = self.worlds[world_name]
             self.world.enter()
             return self.world
         else:
             DEBUG('World not found: {0}'.format(world))
             return None
 
+    def get_world(self, world_name):
+        return self.worlds.get(world_name)
+
     def set_title(self, title):
         PC.title = title
         pygame.display.set_caption(title)
 
     def fullscreen(self):
+        """ Toggles fullscreen """
         screen = pygame.display.get_surface()
         caption = pygame.display.get_caption()
         
@@ -167,9 +206,15 @@ class Engine(object):
         graphics.set_context(self._render_surface)
 
     def preload(self):
+        """ 
+        Called at the beginning of run() before entering the main game loop.
+        Used to load any startup resources or perform required operations.
+        """
         return
 
     def run(self):
+        """ Start game loop (calls preload before running game loop) """
+
         game_timer = pygame.time.Clock()
         utils.Input.poll_keyboard()
 
@@ -177,7 +222,7 @@ class Engine(object):
         self.world.enter()
 
         running = True
-        try:
+        try:  # a try to catch any missed exceptions
             while running:
                 if self.world is not PC.world:
                     PC.world = self.world
@@ -204,16 +249,16 @@ class Engine(object):
                 # Render - Finalize
                 pygame.display.flip()
 
-                # Maintain fps
+                # Maintain fps (display if DEBUG is active)
                 game_timer.tick(PC.fps)
                 if PC.debug:
                     fps = round(game_timer.get_fps())
                     pygame.display.set_caption(PC.title + ' {' + str(fps) + '}')
             
-            self.shutdown()
+            self.shutdown()  # Shutdown all peachy modules
             pygame.event.get()  # Throw away any pending events
             pygame.mixer.quit() 
-            pygame.quit()
+            pygame.quit()  # Shutdown all pygame modules
         
         except:
             import traceback
@@ -222,13 +267,15 @@ class Engine(object):
         sys.exit()
 
     def shutdown(self):
+        """ Shutdown procedure called right before exiting Peachy """
+
         for _, world in self.worlds.items():
             world.shutdown()
     
 
 class Entity(object):
     """
-    Interactable game object
+    Interactive game object
     """
 
     def __init__(self, x=0, y=0):
@@ -248,6 +295,7 @@ class Entity(object):
         self.solid = False        # If the entity registers as a solid object (collision detection)
 
         self.sprite = None        # sprite used for rendering
+        self.order = 0            # Used for sorting entity render order
 
         self.container = None     # The owner of this entity. Must be set before performing any operations involving groups of entities
 
@@ -260,14 +308,22 @@ class Entity(object):
         self.__groups = groups.split()
 
     def center(self):
+        """ Return center coordinates of entity in a tuple """
         return (self.x + self.width / 2, self.y + self.height / 2)
 
     def destroy(self):
+        """ 
+        Remove entity from parent container and set as inactive. Note that
+        resources will not be released until all references to this entity
+        have been removed.
+        """
         self.container.remove(self)
         self.active = False
         self.world = None
 
     def collides(self, e, x, y):  
+        """ Check if 'self' is colliding with specified entity 'e' """
+
         right_a = x + self.width
         bottom_a = y + self.height
         right_b = e.x + e.width
@@ -282,6 +338,12 @@ class Entity(object):
             return False
 
     def collides_group(self, group, x=None, y=None):
+        """ 
+        Check if 'self' is colliding with any entity that is a member of the
+        specificed group. Returns every colliding entity. 
+        Can provide custom x/y or leave blank for self.x/self.y.
+        """
+
         if x is None or y is None:
             x = self.x
             y = self.y
@@ -300,6 +362,10 @@ class Entity(object):
         return collisions
     
     def collides_groups(self, x, y, *groups):
+        """ 
+        Check if 'self' is colliding with any entity that is a member of ANY 
+        of the groups specificed. Returns every colliding entity. 
+        """
         # TODO convert to *args
         if x is None or y is None:
             x = self.x
@@ -325,16 +391,18 @@ class Entity(object):
         return collisions
 
     def collides_name(self, name, x=None, y=None):
+        """ Check if 'self' is colliding with entity of a specific name """
         if x is None or y is None:
             x = self.x
             y = self.y
 
-        for entity in self.container:
-            if entity.name == name and self.collides(entity, x, y):
-                return entity
+        entity = self.container.get_name(name)
+        if entity and self.collides(entity, x, y):
+            return entity
         return None
 
     def collides_point(self, point, x=None, y=None):
+        """ Check if 'self' is colliding with a specific point """
         if x is None or y is None:
             x = self.x
             y = self.y
@@ -347,7 +415,10 @@ class Entity(object):
 
     def collides_circle(self, circle, x=None, y=None):
         """
+        Check if 'self' is colliding with a circle
         circle = tuple (x, y, radius)
+
+        Can provide custom x/y or leave blank for self.x/self.y.
         """
         if x is None or y is None:
             x = self.x
@@ -380,6 +451,12 @@ class Entity(object):
         return corner_distance <= (radius**2)
 
     def collides_rect(self, rect, x=None, y=None):
+        """
+        Check if 'self' is colliding with a rectangle.
+        rect = tuple (x, y, width, height)
+
+        Can provide custom x/y or leave blank for self.x/self.y
+        """
         if x is None or y is None:
             x = self.x
             y = self.y
@@ -403,6 +480,7 @@ class Entity(object):
             return True
 
     def collides_solid(self, x=None, y=None):
+        """ Check if 'self' is colliding with any entity flagged as 'solid' """
         if x is None or y is None:
             x = self.x
             y = self.y
@@ -416,29 +494,37 @@ class Entity(object):
         return collisions
     
     def distance_from(self, entity):
-        a = abs(self.x - entity.x)
-        b = abs(self.y - entity.y)
+        """ Get the abs distance between the center of two entities """
+        sx, sy = self.center()
+        ex, ey = entity.center()
+        a = abs(sx - ex)
+        b = abs(sy - ey)
         return math.sqrt(a**2 + b**2)
 
     def distance_from_point(self, px, py):
+        """ Get the abs distance between the center of 'self' and any point """
         a = abs(self.x - px)
         b = abs(self.y - py)
         return math.sqrt(a**2 + b**2)
     
     def member_of(self, *groups):
+        """ Check is this entity is a member of any of the groups specified """
         for group in self.group:
             if group in groups:
                 return True
         return False
 
     def render(self):
+        """ Perform render logic """
         return
             
     def update(self):
+        """ Perform update logic """
         return
 
 
 class State(object):
+    """ Boilerplate state class for World """
 
     def __init__(self, name, world):
         self.name = name
@@ -459,7 +545,18 @@ class State(object):
 
 class World(object):
     """
-    State machine
+    Worlds contain logic for governing specific states within a game. 
+    Example:
+        GameplayWorld
+        MainMenuWorld
+        etc.
+    
+    Worlds control Stages.
+
+    Worlds can switch between each other by invoking Engine.change_world()
+
+    Note: State's are not automatically updated or rendered and the logic for
+    invoking these methods should be custom.
     """
 
     def __init__(self, name):
@@ -474,6 +571,8 @@ class World(object):
             self.state = state
 
     def change_stage(self, stage):
+        """ Change the current stage and clear the previous stage """
+
         if self.stage:
             self.stage.clear()
             self.stage.exit()
@@ -481,6 +580,8 @@ class World(object):
         self.stage.enter()
 
     def change_state(self, state_name, *args):
+        """ Change the current state """
+
         if state_name in self.states and \
            state_name != self.state.name:
 
@@ -495,12 +596,15 @@ class World(object):
             DEBUG('[ERROR] {0} state ({1}) not found', self.name, state_name)
 
     def enter(self):
+        """ Called after entering this world """
         return
 
     def exit(self):
+        """ Called before exiting this world """
         return
 
     def shutdown(self):
+        """ Shutdown procedure called during exit of Engine """
         try: 
             self.stage.clear()
             self.stage = None

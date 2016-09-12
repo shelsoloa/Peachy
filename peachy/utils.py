@@ -21,13 +21,15 @@ class Point(object):
 
 
 class Counter(object):
-    def __init__(self, start, target, step=1):
+    def __init__(self, start, target, step=1, repeat=False, reverse=False):
         self.start = start
         self.target = target
         self.step = step
-
         self.current = start
+
         self.finished = False
+        self.repeat = repeat
+        self._reverse = reverse
 
     def complete(self):
         self.current = self.target
@@ -37,6 +39,12 @@ class Counter(object):
         self.current = self.start
         self.finished = False
 
+    def reverse(self):
+        t = self.start
+        self.start = self.target
+        self.target = t
+        self.step *= -1
+
     def advance(self):
         self.tick()
         return self.finished
@@ -44,9 +52,17 @@ class Counter(object):
     def tick(self):
         if not self.finished:
             self.current += self.step
+            self.current = round(self.current, 2)
             if self.current == self.target:  # TODO allow for over shooting target
-                self.finished = True
-        return self.current
+                if self._reverse:
+                    self.reverse()
+                elif self.repeat:
+                    self.current = 0
+                else:
+                    self.finished = True
+            return self.current
+        else:
+            return False
 
 
 class Camera(object):
@@ -131,6 +147,7 @@ class Camera(object):
 
 
 class Input(object):
+    """ Keyboard & Mouse input helper """
 
     curr_key_state = []
     prev_key_state = []

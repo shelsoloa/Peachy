@@ -1,4 +1,5 @@
 import os
+import operator
 
 import peachy
 from peachy import DEBUG
@@ -6,7 +7,7 @@ from peachy.fs import open_xml
 
 
 def load_tiled_tmx(path):
-    """ Creates a new MapData object from a tiled .tmx file """
+    """ Creates a new StageData object from a tiled .tmx file """
 
     xml = open_xml(path)
     if xml is None:
@@ -74,12 +75,15 @@ def load_tiled_tmx(path):
         stage.tilesets.append(tileset)
 
     # Load layers and tiles
+    layer_count = 0
     for layer_raw in stage_raw.getElementsByTagName('layer'):
 
         layer = stage._Layer()
         layer.name = layer_raw.getAttribute('name')
         layer.width = int(layer_raw.getAttribute('width')) * stage.tile_width
         layer.height = int(layer_raw.getAttribute('height')) * stage.tile_height
+        layer.order = layer_count
+        layer_count += 1
 
         tile_x = 0
         tile_y = 0
@@ -105,8 +109,8 @@ def load_tiled_tmx(path):
             property_value = prop.getAttribute('value')
             layer.properties[property_name] = property_value
 
-        stage.layers[layer.name] = layer
-
+        stage.layers.append(layer)
+    
     # Load objects
     for object_group in stage_raw.getElementsByTagName('objectgroup'):
 
@@ -138,7 +142,7 @@ def load_tiled_tmx(path):
                 points_raw = polygon[0].getAttribute('points').split()
                 for raw_point in points_raw:
                     raw_point = raw_point.split(',')
-                    p = Point(int(raw_point[0]), int(raw_point[1]))
+                    p = peachy.utils.Point(int(raw_point[0]), int(raw_point[1]))
                     obj.polygon_points.append(p)
                 obj.is_polygon = True
 
@@ -156,14 +160,20 @@ def load_tiled_tmx(path):
 
 def render_map(stage):
     """ Convenience function that render all layers """
-    for layer in stage.layers.values():
+    for layer in stage.layers:
         render_layer(layer)
 
+
 def render_layer(stage, layer):
-    """ Render a single layer by providing a reference """
+    """ Render a single layer by providing reference or layer name """
 
     if isinstance(layer, str):
-        layer = stage.layers.get(layer)
+        for x in stage.layers:
+            if x.name == layer:
+                layer = x
+                break
+        else:
+            layer = None
 
     try:
         for tile in layer.tiles:
@@ -187,20 +197,26 @@ class Stage(object):
         return self.entities.__iter__()
 
     def enter(self):
+        """ Called after entering this stage """
         return
     
     def exit(self):
+        """ Called before exiting this stage """
         return
 
     def add(self, entity):
+        """ Add an entity to this Stage """
         entity.container = self
         self.entities.append(entity)
         return entity
 
     def clear(self):
+        """ Remove all entities from this Stage """
         del self.entities[:]
 
     def get_group(self, *groups):
+        """ Get all entities that are members of any of the specified groups """
+
         ents = []
         for e in self.entities:
             if e.member_of(*groups):
@@ -208,37 +224,47 @@ class Stage(object):
         return ents
 
     def get_name(self, name):
+        """ Get the first entity of a specific name """
         for e in self.entities:
             if e.name == name:
                 return e
         return None
 
     def remove(self, entity):
+        """ Remove this entity from the Stage """
         try:
             self.entities.remove(entity)
         except ValueError:
             pass  # Do nothing
 
     def remove_group(self, group):
+        """ Remove every entity that is a member of the specified group """
         for entity in self.entities:
             if entity.member_of(group):
                 self.entities.remove(entity)
 
     def remove_name(self, entity_name):
+        """ Remove the first entity with this name """
         for entity in self.entities:
             if entity.name == entity_name:
                 self.entities.remove(entity)
                 break
 
     def render(self):
+        """ Render all visible entities """
         for entity in self.entities:
             if entity.visible:
                 entity.render()
 
     def update(self):
+        """ Update all active entities """
         for entity in self.entities:
             if entity.active:
                 entity.update()
+
+    def sort(self):
+        """ Sort entities based on entity.order """
+        self.entities.sort(key=lambda entity: entity.order)
 
 
 class StageData(object):
@@ -250,7 +276,7 @@ class StageData(object):
         self.tile_width = 0
         self.tile_height = 0
 
-        self.layers = dict()
+        self.layers = []  # Cannot be dict because layers must remain in order
         self.objects = []
         self.tilesets = []
         self.tileset_images = []
@@ -306,6 +332,7 @@ class StageData(object):
 
 
 class AStarGrid(object):
+    """ Has not been updated to conform with current StageData object """
 
     def __init__(self, width, height):
         self.width = width

@@ -206,7 +206,9 @@ def translate(x, y, absolute=True):
         __translation.x += x
         __translation.y += y
 
+
 """ Image Manip """
+
 
 def rotate(image, degree):
     return pygame.transform.rotate(image, degree)
@@ -236,6 +238,7 @@ def splice(image, frame_width, frame_height, margin_x=0, margin_y=0):
             y += frame_height + margin_y
 
     return sub_images
+
 
 class SpriteMap(object):
 
