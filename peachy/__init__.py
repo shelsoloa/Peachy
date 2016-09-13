@@ -1,4 +1,4 @@
-import math 
+import math
 import os
 import platform
 import sys
@@ -19,9 +19,9 @@ def get_version():
 class PC(object):
     """
     PC (Peachy Controller)
-    This is the central access point for classes within the Peachy framework. 
+    This is the central access point for classes within the Peachy framework.
     This class contains references to the window, world, and entity room. Its
-    values are set after startup. 
+    values are set after startup.
     This is the only class that can be accessed by submodules within the Peachy
     framework.
     """
@@ -42,7 +42,7 @@ class PC(object):
     @property
     def world(self):
         return PC.engine.world
-    
+
     @property
     def stage(self):
         return PC.engine.world.stage
@@ -62,7 +62,7 @@ import peachy.stage as stage
 class Engine(object):
     """
     Engine is the main controller for Peachy and controls priority aspects of
-    the applications such as: initializing the game, running the game loop, 
+    the applications such as: initializing the game, running the game loop,
     and controlling World objects.
     """
 
@@ -89,7 +89,7 @@ class Engine(object):
             plat = platform.system()
 
         # Initialize pygame
-        os.environ['SDL_VIDEO_CENTERED'] = "1" 
+        os.environ['SDL_VIDEO_CENTERED'] = "1"
 
         try:
             pygame.mixer.pre_init(44100, -16, 8, 512)
@@ -97,7 +97,7 @@ class Engine(object):
             pygame.freetype.init()
             pygame.mixer.init()
             # Joystick module prints useless dialog
-            # pygame.joystick.init()  
+            # pygame.joystick.init()
         except Exception:
             if pygame.display.get_init() is None:
                 print("[ERROR] Could not initialize pygame display. Abort")
@@ -111,12 +111,13 @@ class Engine(object):
 
         # General initialization
         pygame.display.set_caption(title)
-        utils.Input.init()
+        utils.Keys.init()
+        utils.Mouse.init()
 
         # Initialize display (pygame)
         self.view_size = (PC.width, PC.height)
         self.window_size = (PC.width * scale, PC.height * scale)
-        
+
         self._window_surface = pygame.display.set_mode(self.window_size)
         self._render_surface = pygame.Surface(self.view_size)
 
@@ -131,7 +132,7 @@ class Engine(object):
 
     def add_world(self, world, name=''):
         """
-        Adds world to the Engine.worlds list. If there are no worlds in worlds 
+        Adds world to the Engine.worlds list. If there are no worlds in worlds
         list, then this worlds is set as active.
 
         Key for this world is name or world.name if name is left unspecified
@@ -175,7 +176,7 @@ class Engine(object):
         """ Toggles fullscreen """
         screen = pygame.display.get_surface()
         caption = pygame.display.get_caption()
-        
+
         flags = screen.get_flags()
         bits = screen.get_bitsize()
 
@@ -206,7 +207,7 @@ class Engine(object):
         graphics.set_context(self._render_surface)
 
     def preload(self):
-        """ 
+        """
         Called at the beginning of run() before entering the main game loop.
         Used to load any startup resources or perform required operations.
         """
@@ -216,7 +217,8 @@ class Engine(object):
         """ Start game loop (calls preload before running game loop) """
 
         game_timer = pygame.time.Clock()
-        utils.Input.poll_keyboard()
+        utils.Mouse._poll()
+        utils.Keys._poll()
 
         self.preload()
         self.world.enter()
@@ -233,7 +235,8 @@ class Engine(object):
                         running = False
                         break
 
-                utils.Input.poll_keyboard()
+                utils.Mouse._poll()
+                utils.Keys._poll()
 
                 # Update
                 self.world.update()
@@ -254,12 +257,12 @@ class Engine(object):
                 if PC.debug:
                     fps = round(game_timer.get_fps())
                     pygame.display.set_caption(PC.title + ' {' + str(fps) + '}')
-            
+
             self.shutdown()  # Shutdown all peachy modules
             pygame.event.get()  # Throw away any pending events
-            pygame.mixer.quit() 
+            pygame.mixer.quit()
             pygame.quit()  # Shutdown all pygame modules
-        
+
         except:
             import traceback
             print("[ERROR] Unexpected error. {0} shutting down.".format(PC.title))
@@ -271,7 +274,7 @@ class Engine(object):
 
         for _, world in self.worlds.items():
             world.shutdown()
-    
+
 
 class Entity(object):
     """
@@ -289,7 +292,7 @@ class Entity(object):
 
         self.velocity_x = 0       # x-axis velocity
         self.velocity_y =  0      # y-axis velocity
-        
+
         self.active = True        # If the entity is being updated
         self.visible = True       # If the entity is being rendered
         self.solid = False        # If the entity registers as a solid object (collision detection)
@@ -302,7 +305,7 @@ class Entity(object):
     @property
     def group(self):
         return self.__groups
-    
+
     @group.setter
     def group(self, groups):
         self.__groups = groups.split()
@@ -312,7 +315,7 @@ class Entity(object):
         return (self.x + self.width / 2, self.y + self.height / 2)
 
     def destroy(self):
-        """ 
+        """
         Remove entity from parent container and set as inactive. Note that
         resources will not be released until all references to this entity
         have been removed.
@@ -321,14 +324,14 @@ class Entity(object):
         self.active = False
         self.world = None
 
-    def collides(self, e, x, y):  
+    def collides(self, e, x, y):
         """ Check if 'self' is colliding with specified entity 'e' """
 
         right_a = x + self.width
         bottom_a = y + self.height
         right_b = e.x + e.width
         bottom_b = e.y + e.height
-        
+
         if x < right_b and \
            right_a > e.x and \
            y < bottom_b and \
@@ -338,9 +341,9 @@ class Entity(object):
             return False
 
     def collides_group(self, group, x=None, y=None):
-        """ 
+        """
         Check if 'self' is colliding with any entity that is a member of the
-        specificed group. Returns every colliding entity. 
+        specificed group. Returns every colliding entity.
         Can provide custom x/y or leave blank for self.x/self.y.
         """
 
@@ -360,11 +363,11 @@ class Entity(object):
             if entity.active and self.collides(entity, x, y):
                 collisions.append(entity)
         return collisions
-    
+
     def collides_groups(self, x, y, *groups):
-        """ 
-        Check if 'self' is colliding with any entity that is a member of ANY 
-        of the groups specificed. Returns every colliding entity. 
+        """
+        Check if 'self' is colliding with any entity that is a member of ANY
+        of the groups specificed. Returns every colliding entity.
         """
         # TODO convert to *args
         if x is None or y is None:
@@ -381,7 +384,7 @@ class Entity(object):
         for e in entities:
             keys[e] = 1
         keys.pop(self, None)
-        entities = keys.keys() 
+        entities = keys.keys()
 
         # collision detection
         collisions = []
@@ -423,14 +426,14 @@ class Entity(object):
         if x is None or y is None:
             x = self.x
             y = self.y
-        
+
         circle_x, circle_y, radius = circle
         circle_x += radius
         circle_y += radius
 
         rx = self.x + self.width / 2
         ry = self.y + self.height / 2
-        
+
         dist_x = abs(circle_x - rx)
         dist_y = abs(circle_y - ry)
         half_width = self.width / 2
@@ -472,7 +475,7 @@ class Entity(object):
         right_b = rx + rwidth
         top_b = ry
         bottom_b = ry + rheight
-        
+
         if (bottom_a <= top_b or top_a >= bottom_b or
                 right_a <= left_b or left_a >= right_b):
             return False
@@ -492,7 +495,7 @@ class Entity(object):
             elif entity.solid and self.collides(entity, x, y):
                 collisions.append(entity)
         return collisions
-    
+
     def distance_from(self, entity):
         """ Get the abs distance between the center of two entities """
         sx, sy = self.center()
@@ -506,7 +509,7 @@ class Entity(object):
         a = abs(self.x - px)
         b = abs(self.y - py)
         return math.sqrt(a**2 + b**2)
-    
+
     def member_of(self, *groups):
         """ Check is this entity is a member of any of the groups specified """
         for group in self.group:
@@ -517,7 +520,7 @@ class Entity(object):
     def render(self):
         """ Perform render logic """
         return
-            
+
     def update(self):
         """ Perform update logic """
         return
@@ -545,12 +548,12 @@ class State(object):
 
 class World(object):
     """
-    Worlds contain logic for governing specific states within a game. 
+    Worlds contain logic for governing specific states within a game.
     Example:
         GameplayWorld
         MainMenuWorld
         etc.
-    
+
     Worlds control Stages.
 
     Worlds can switch between each other by invoking Engine.change_world()
@@ -590,7 +593,7 @@ class World(object):
 
             previous_state.exit(incoming_state, *args)
             incoming_state.enter(previous_state, *args)
-            
+
             self.state = incoming_state
         else:
             DEBUG('[ERROR] {0} state ({1}) not found', self.name, state_name)
@@ -605,10 +608,10 @@ class World(object):
 
     def shutdown(self):
         """ Shutdown procedure called during exit of Engine """
-        try: 
+        try:
             self.stage.clear()
             self.stage = None
-        except AttributeError: 
+        except AttributeError:
             pass
 
         try:
@@ -623,4 +626,3 @@ class World(object):
 
     def render(self):
         self.stage.render()
-

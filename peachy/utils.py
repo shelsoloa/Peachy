@@ -12,7 +12,7 @@ class Point(object):
 
     def __str__(self):
         return "({0}, {1})".format(self.x, self.y)
-    
+
     def __eq__(self, other):
         if isinstance(other, self.__class__):
             return self.__dict__ == other.__dict__
@@ -66,7 +66,7 @@ class Counter(object):
 
 
 class Camera(object):
-    
+
     def __init__(self, view_width, view_height, speed=1):
         self.x = 0
         self.y = 0
@@ -145,69 +145,115 @@ class Camera(object):
     def translate(self):
         peachy.graphics.translate(self.x, self.y)
 
-
-class Input(object):
-    """ Keyboard & Mouse input helper """
-
-    curr_key_state = []
-    prev_key_state = []
+class Mouse(object):
+    """ Mouse input & tracking """
+    current_state = (False, False, False)
+    previous_state = (False, False, False)
+    x = 0
+    y = 0
 
     @staticmethod
     def init():
-        Input.curr_key_state = pygame.key.get_pressed()
-        Input.prev_key_state = pygame.key.get_pressed()
+        Mouse.current_state = pygame.mouse.get_pressed()
+        Mouse.previous_state = pygame.mouse.get_pressed()
+
+    @staticmethod
+    def down(button):
+        code = Mouse._get_button_code(button)
+        if code != -1:
+            return Mouse.current_state[code]
+        return False
+
+    @staticmethod
+    def pressed(button):
+        code = Mouse._get_button_code(button)
+        if code != -1:
+            return Mouse.current_state[code] and not Mouse.previous_state[code]
+        return False
+
+    @staticmethod
+    def released(button):
+        code = Mouse._get_button_code(button)
+        if code != -1:
+            return not Mouse.current_state[code] and Mouse.previous_state[code]
+        return False
+
+    @staticmethod
+    def _poll():
+        Mouse.previous_state = Mouse.current_state
+        Mouse.current_state = pygame.mouse.get_pressed()
+        Mouse.x, Mouse.y = pygame.mouse.get_pos()
+
+    @staticmethod
+    def _get_button_code(button):
+        if button == 'left': return 0
+        if button == 'right': return 1
+        if button == 'middle' or button == 'center': return 2
+        return -1
+
+class Keys(object):
+    """ Keyboard & Mouse input helper """
+
+    current_state = []
+    previous_state = []
+
+
+    @staticmethod
+    def init():
+        Keys.current_state = pygame.key.get_pressed()
+        Keys.previous_state = pygame.key.get_pressed()
 
     @staticmethod
     def down(key):
-        code = Input.get_key_code(key)
+        code = Key._get_key_code(key)
         if code != -1:
-            return Input.curr_key_state[code]
+            return Keys.current_state[code]
         return False
 
     @staticmethod
     def pressed(key):
         if key == 'any':
-            for code in xrange(len(Input.curr_key_state)):
-                if Input.curr_key_state[code] and not Input.prev_key_state[code]:
+            for code in xrange(len(Keys.current_state)):
+                if Keys.current_state[code] and not Keys.previous_state[code]:
                     return True
             return False
         else:
-            code = Input.get_key_code(key)
+            code = Keys._get_key_code(key)
             if code != -1:
-                return Input.curr_key_state[code] and not Input.prev_key_state[code]
+                return Keys.current_state[code] and not Keys.previous_state[code]
             return False
-    
+
     @staticmethod
     def released(key):
-        code = Input.get_key_code(key)
+        code = Keys._get_key_code(key)
         if code != -1:
-            return not Input.curr_key_state[code] and Input.prev_key_state[code]
+            return not Keys.current_state[code] and Keys.previous_state[code]
         return False
 
     @staticmethod
-    def poll_keyboard():
-        Input.prev_key_state = Input.curr_key_state
-        Input.curr_key_state = pygame.key.get_pressed()
-    
+    def _poll():
+        Keys.previous_state = Keys.current_state
+        Keys.current_state = pygame.key.get_pressed()
+
     @staticmethod
-    def get_key_code(key):
-        if key == 'enter': 
+    def _get_key_code(key):
+        if key == 'enter':
             return K_RETURN
-        elif key == 'escape': 
+        elif key == 'escape':
             return K_ESCAPE
-        elif key == 'lshift': 
+        elif key == 'lshift':
             return K_LSHIFT
-        elif key == 'rshift': 
+        elif key == 'rshift':
             return K_RSHIFT
-        elif key == 'space': 
+        elif key == 'space':
             return K_SPACE
-        elif key == 'left': 
+        elif key == 'left':
             return K_LEFT
-        elif key == 'right': 
+        elif key == 'right':
             return K_RIGHT
-        elif key == 'up': 
+        elif key == 'up':
             return K_UP
-        elif key == 'down': 
+        elif key == 'down':
             return K_DOWN
 
         elif key == '1':
@@ -310,4 +356,3 @@ class Input(object):
             return K_z
         else:
             return -1
-
