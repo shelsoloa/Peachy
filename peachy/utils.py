@@ -197,7 +197,6 @@ class Keys(object):
     current_state = []
     previous_state = []
 
-
     @staticmethod
     def init():
         Keys.current_state = pygame.key.get_pressed()
@@ -205,7 +204,7 @@ class Keys(object):
 
     @staticmethod
     def down(key):
-        code = Key._get_key_code(key)
+        code = Keys._get_key_code(key)
         if code != -1:
             return Keys.current_state[code]
         return False
@@ -245,7 +244,7 @@ class Keys(object):
             return K_LSHIFT
         elif key == 'rshift':
             return K_RSHIFT
-        elif key == 'space':
+        elif key == 'space' or key == ' ':
             return K_SPACE
         elif key == 'left':
             return K_LEFT
@@ -255,6 +254,10 @@ class Keys(object):
             return K_UP
         elif key == 'down':
             return K_DOWN
+        elif key == 'backspace':
+            return K_BACKSPACE
+        elif key == 'delete':
+            return K_DELETE
 
         elif key == '1':
             return K_1;
@@ -301,6 +304,15 @@ class Keys(object):
             return K_F11;
         elif key == 'F12':
             return K_F12;
+
+        elif key == '+':
+            return K_KP_PLUS
+        elif key == '-':
+            return K_KP_MINUS
+        elif key == '_':
+            return K_UNDERSCORE
+        elif key == '.':
+            return K_PERIOD
 
         elif key == 'a':
             return K_a
@@ -356,3 +368,34 @@ class Keys(object):
             return K_z
         else:
             return -1
+
+
+class TypeWriter(object):
+    """
+    The typewriter takes all alphanumeric input recorded by Keys and stores it
+    inside of self.value. This is useful for text input like naming things.
+    """
+
+    def __init__(self, value=''):
+        self.value = value
+
+    def update(self):
+        keys = [
+            '1','2','3','4','5','6','7','8','9','0','.','_','-',
+            'a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q',
+            'r','s','t','u','v','w','x','y','z',
+            'A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q',
+            'R','S','T','U','V','W','X','Y','Z', ' '
+        ]
+
+        shift = Keys.down('lshift') or Keys.down('rshift')
+
+        if Keys.pressed('backspace') or Keys.pressed('delete'):
+            self.value = self.value[:-1]
+
+        for key in keys:
+            if Keys.pressed(key):
+                if shift:
+                    self.value += key.upper()
+                else:
+                    self.value += key
