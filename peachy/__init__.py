@@ -66,7 +66,8 @@ class Engine(object):
     and controlling World objects.
     """
 
-    def __init__(self, view_size, title='', fps=60, scale=1, debug=False):
+    def __init__(self, view_size, title='', fps=60, scale=1, debug=False,
+                 resizable=False):
         self.worlds = {}
         self.world = None
 
@@ -118,7 +119,11 @@ class Engine(object):
         self.view_size = (PC.width, PC.height)
         self.window_size = (PC.width * scale, PC.height * scale)
 
-        self._window_surface = pygame.display.set_mode(self.window_size)
+        flags = 0
+        if resizable:
+            flags += RESIZABLE
+
+        self._window_surface = pygame.display.set_mode(self.window_size, flags)
         self._render_surface = pygame.Surface(self.view_size)
 
         graphics.DEFAULT_CONTEXT = self._render_surface
@@ -213,6 +218,19 @@ class Engine(object):
         """
         return
 
+    def resize(self, width, height):
+        self.view_size = (width, height)
+        screen = pygame.display.get_surface()
+        flags = screen.get_flags()
+        bits = screen.get_bitsize()
+        self.window_size = (width * PC.scale, height * PC.scale)
+        self._window_surface = pygame.display.set_mode(self.window_size, flags, bits)
+        self._render_surface = pygame.Surface(self.view_size)
+        graphics.DEFAULT_CONTEXT = self._render_surface
+        graphics.set_context(self._render_surface)
+        PC.width = width
+        PC.height = height
+
     def run(self):
         """ Start game loop (calls preload before running game loop) """
 
@@ -234,6 +252,8 @@ class Engine(object):
                     if event.type == QUIT:
                         running = False
                         break
+                    elif event.type == VIDEORESIZE:
+                        self.resize(event.w, event.h)
 
                 utils.Mouse._poll()
                 utils.Keys._poll()
