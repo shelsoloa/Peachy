@@ -187,8 +187,8 @@ class Mouse(object):
     @staticmethod
     def _get_button_code(button):
         if button == 'left': return 0
-        if button == 'right': return 1
-        if button == 'middle' or button == 'center': return 2
+        if button == 'right': return 2
+        if button == 'middle' or button == 'center': return 1
         return -1
 
 class Keys(object):
@@ -258,6 +258,8 @@ class Keys(object):
             return K_BACKSPACE
         elif key == 'delete':
             return K_DELETE
+        elif key == 'tab':
+            return K_TAB
 
         elif key == '1':
             return K_1;
