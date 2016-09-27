@@ -584,6 +584,7 @@ class World(object):
 
     def __init__(self, name):
         self.name = name
+        self.ui = None
         self.stage = stage.Stage(self)
         self.state = None
         self.states = {}
@@ -626,6 +627,10 @@ class World(object):
         """ Called before exiting this world """
         return
 
+    def register_UI(self, ui):
+        """ Attach a UI component to this world """
+        self.ui = ui
+
     def shutdown(self):
         """ Shutdown procedure called during exit of Engine """
         try:
@@ -642,7 +647,23 @@ class World(object):
             pass
 
     def update(self):
+        try:
+            self.ui.update()
+        except AttributeError:
+            if self.ui == None:
+                pass
+            else:
+                raise
+
         self.stage.update()
 
     def render(self):
+        try:
+            self.ui.render()
+        except AttributeError:
+            if self.ui == None:
+                pass
+            else:
+                raise
+
         self.stage.render()
