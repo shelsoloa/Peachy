@@ -1,7 +1,16 @@
 import peachy
 
+def _iter_widget(widget):
+    for child in widget.children:
+        if child.children:
+            for c in iter_widget(child):
+                yield c
+        else:
+            yield child
+
 class UICanvas(object):
-    def __init__(self):
+    def __init__(self, world):
+        self.world = world
         self.widgets = []
         self._focused_widget = None
 
@@ -14,6 +23,21 @@ class UICanvas(object):
         if self._focused_widget != None:
             self._focused_widget.focused = False
         self._focused_widget = widget
+
+    """
+    A generator that recurses through every widget including child widgets.
+    Returns widgets in FIFO order and children in LIFO
+
+    #TODO change children to also return FIFO
+    """
+    def all_widgets(self):
+        # Iteration is reversed because widgets are processed FIFO
+        for w in range(len(self.widgets)-1, -1, -1):
+            widget = self.widgets[w]
+            # Wraps iter_widget to allow for iteration of UICanvas widgets
+            for child in _iter_widget(widget):
+                yield child
+            yield widget
 
     def add(self, widget):
         widget.parent = self
@@ -45,27 +69,18 @@ class UICanvas(object):
         z-order at Mouse.location
         """
         mx, my = peachy.utils.Mouse.location
-        for i in range(len(self.widgets)-1, -1, -1):
-            if self.__poll_widget(self.widgets[i], mx, my):
+
+        for widget in self.all_widgets():
+            if widget.x <= mx <= widget.x + widget.width and \
+               widget.y <= my <= widget.y + widget.height:
+                widget.clicked(mx, my)
+                while widget:
+                    if widget.focusable:
+                        self.focused_widget = widget
+                        break
+                    else:
+                        widget = widget.parent
                 break
-
-    def __poll_widget(self, widget, mx, my):
-        # Recurse through children and check if any have been clicked. If so,
-        # then return true
-        for child in widget.children:
-            if self.__poll_widget(child, mx, my):
-                widget.child_clicked()
-                if not child.focused and widget.focusable:
-                    self.focused_widget = self
-                return True
-
-        # Check if this widget has been clicked
-        if widget.x <= mx <= widget.x + widget.width and \
-           widget.y <= my <= widget.y + widget.height:
-            widget.clicked(mx, my)
-            if widget.focusable:
-                self.focused_widget = widget
-            return True
 
     def update(self):
         if peachy.utils.Mouse.pressed('left'):
@@ -78,13 +93,13 @@ class UICanvas(object):
 
 
 class Widget(object):
-    def __init__(self, x, y, width=0, height=0, label=''):
-        self.label = ''
+    def __init__(self, x, y, width=0, height=0, name=''):
+        self.name = name
 
         self.x = x
         self.y = y
-        self.width = 0
-        self.height = 0
+        self.width = width
+        self.height = height
 
         self.active = True
         self.visible = True
