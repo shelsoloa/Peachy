@@ -39,6 +39,11 @@ class UICanvas(object):
                 yield child
             yield widget
 
+    def get_name(self, name):
+        for widget in self.all_widgets():
+            if widget.name == name:
+                return widget
+
     def add(self, widget):
         widget.parent = self
         if self.focused_widget == None:
