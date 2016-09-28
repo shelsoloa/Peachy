@@ -25,7 +25,7 @@ __font = None
 def draw(image, x, y, args=0):
     x -= __translation.x
     y -= __translation.y
-    
+
     bounds = image.get_rect().move(x, y)
 
     if bounds.colliderect(__context_rect):
@@ -92,8 +92,7 @@ def draw_polygon(points, aa=False):
         pygame.draw.polygon(temp, __color, points)
         __context.blit(temp, (-__translation.x, -__translation.y))
 
-
-def draw_rect(x, y, width, height):
+def draw_rect(x, y, width, height, thickness=0):
     """ Draw a rectangle """
     x -= __translation.x
     y -= __translation.y
@@ -101,10 +100,13 @@ def draw_rect(x, y, width, height):
     try:
         assert __color[3] < 255
         temp = Surface((width, height), pygame.SRCALPHA)
-        temp.fill(__color)
+        if thickness <= 0:
+            temp.fill(__color)
+        else:
+            pygame.draw.rect(temp, __color, (0, 0, width, height), thickness)
         __context.blit(temp, (x, y))
     except (AssertionError, IndexError):
-        pygame.draw.rect(__context, __color, (x, y, width, height))
+        pygame.draw.rect(__context, __color, (x, y, width, height), thickness)
 
 def draw_rounded_rect(x, y, width, height, radius):
     """ Draw a rectangle with rounded corners """
@@ -119,7 +121,7 @@ def draw_rounded_rect(x, y, width, height, radius):
     circle = Surface([min(rect.size) * 3] * 2, pygame.SRCALPHA)
     pygame.draw.ellipse(circle, (0, 0, 0), circle.get_rect(), 0)
     circle = pygame.transform.smoothscale(circle, [int(min(rect.size) * radius)] * 2)
-    
+
     radius = rectangle.blit(circle, (0, 0))
     radius.bottomright = rect.bottomright
     rectangle.blit(circle, radius)
@@ -308,7 +310,7 @@ class SpriteMap(object):
 
         frame = self.current_animation['frames'][self.current_frame]
         args = 0
-        
+
         if frame != -1:
             if self.flipped_x:
                 args = args | FLIP_X
@@ -322,14 +324,14 @@ class SpriteMap(object):
     def step(self):
         if self.time_remaining > 0:
             self.time_remaining -= 1
-            
+
             if self.time_remaining <= 0:
                 self.current_frame += 1
 
                 if self.current_frame >= len(self.current_animation['frames']):
 
                     # Loop or not
-                    
+
                     if self.current_animation['loops']:
                         self.current_frame = 0
                         self.time_remaining = self.current_animation['frame_rate']
@@ -345,4 +347,3 @@ class SpriteMap(object):
         self.paused = True
         self.current_frame = 0
         self.time_remaining = self.current_animation['frame_rate']
-
