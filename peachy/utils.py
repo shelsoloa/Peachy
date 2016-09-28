@@ -151,6 +151,7 @@ class Mouse(object):
     previous_state = (False, False, False)
     x = 0
     y = 0
+    location = (0, 0)
 
     @staticmethod
     def init():
@@ -182,7 +183,7 @@ class Mouse(object):
     def _poll():
         Mouse.previous_state = Mouse.current_state
         Mouse.current_state = pygame.mouse.get_pressed()
-        Mouse.x, Mouse.y = pygame.mouse.get_pos()
+        Mouse.x, Mouse.y = Mouse.location = pygame.mouse.get_pos()
 
     @staticmethod
     def _get_button_code(button):

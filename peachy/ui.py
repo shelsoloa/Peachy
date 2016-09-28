@@ -3,7 +3,17 @@ import peachy
 class UICanvas(object):
     def __init__(self):
         self.widgets = []
-        self.focused_widget = None
+        self._focused_widget = None
+
+    @property
+    def focused_widget(self):
+        return self._focused_widget
+
+    @focused_widget.setter
+    def focused_widget(self, widget):
+        if self._focused_widget != None:
+            self._focused_widget.focused = False
+        self._focused_widget = widget
 
     def add(self, widget):
         widget.parent = self
@@ -34,19 +44,28 @@ class UICanvas(object):
         Note: Widget.clicked() is only fired for the Widget with the highest
         z-order at Mouse.location
         """
-        # TODO child widgets can not be clicked
+        mx, my = peachy.utils.Mouse.location
         for i in range(len(self.widgets)-1, -1, -1):
-            widget = self.widgets[i]
-            mx, my = peachy.utils.Mouse.x, peachy.utils.Mouse.y
-            wx, wy = widget.get_absolute()
-            if wx <= mx <= wx + widget.width and \
-               wy <= my <= wy + widget.height:
-                widget.clicked()
-                if widget.focusable:
-                    if self.focused_widget:
-                        self.focused_widget.focused = False
-                    self.focused_widget = widget
+            if self.__poll_widget(self.widgets[i], mx, my):
                 break
+
+    def __poll_widget(self, widget, mx, my):
+        # Recurse through children and check if any have been clicked. If so,
+        # then return true
+        for child in widget.children:
+            if self.__poll_widget(child, mx, my):
+                widget.child_clicked()
+                if not child.focused and widget.focusable:
+                    self.focused_widget = self
+                return True
+
+        # Check if this widget has been clicked
+        if widget.x <= mx <= widget.x + widget.width and \
+           widget.y <= my <= widget.y + widget.height:
+            widget.clicked(mx, my)
+            if widget.focusable:
+                self.focused_widget = widget
+            return True
 
     def update(self):
         if peachy.utils.Mouse.pressed('left'):
@@ -94,21 +113,14 @@ class Widget(object):
         widget.parent = self
         self.children.append(widget)
 
-    def clicked(self):
+    def clicked(self, x, y):
         return
 
-    def get_absolute(self):
-        """
-        Returns the absolute coordinates of this widget, regardless of its
-        nesting.
-        """
-        # TODO code this to recurse over parents
-        # if self.parent == None:
-        #     return (self.x, self.y)
-        # else:
-        #     px, py = self.parent.get_absolute()
-        #     return (self.x + px, self.y + py)
-        return (self.x, self.y)
+    def child_clicked(self):
+        return
+
+    def normalize(self, x, y):
+        return (x - self.x, y - self.y)
 
     def render(self):
         return
