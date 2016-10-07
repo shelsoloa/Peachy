@@ -1,11 +1,10 @@
-import os
+import math
 import pygame
 
 from pygame import Surface
 from pygame import gfxdraw
 from pygame.freetype import Font
 
-from peachy import PC
 from peachy.utils import Point
 
 FLIP_X = 0x01
@@ -20,7 +19,9 @@ __translation = Point()
 __color = pygame.Color(0, 0, 0)
 __font = None
 
+
 """ Drawing """
+
 
 def draw(image, x, y, args=0):
     x -= __translation.x
@@ -36,6 +37,7 @@ def draw(image, x, y, args=0):
 
         __context.blit(image, (x, y))
 
+
 def draw_arc(x, y, r, start, end):
     alpha = False
     try:
@@ -49,7 +51,7 @@ def draw_arc(x, y, r, start, end):
 
     points = []
     points.append((x, y))
-    for angle in xrange(start, end):
+    for angle in range(start, end):
         rad = math.radians(angle)
         dx = math.cos(rad) * r
         dy = math.cos(rad) * r
@@ -60,8 +62,10 @@ def draw_arc(x, y, r, start, end):
     else:
         pygame.draw.polygon(__context, __color, points)
 
+
 def draw_entity_rect(entity):
     draw_rect(entity.x, entity.y, entity.width, entity.height)
+
 
 def draw_circle(x, y, r):
     x = int(x - __translation.x + r)
@@ -75,6 +79,7 @@ def draw_circle(x, y, r):
     except (AssertionError, IndexError):
         pygame.draw.circle(__context, __color, (x, y), r)
 
+
 def draw_line(x1, y1, x2, y2):
     x1 -= __translation.x
     x2 -= __translation.x
@@ -83,14 +88,17 @@ def draw_line(x1, y1, x2, y2):
 
     pygame.draw.line(__context, __color, (x1, y1), (x2, y2))
 
+
 def draw_polygon(points, aa=False):
     if aa:
         gfxdraw.filled_polygon(__context, points, __color)
         gfxdraw.aapolygon(__context, points, __color)
     else:
-        temp = Surface((__context.get_width(), __context.get_height()), pygame.SRCALPHA)
+        temp = Surface((__context.get_width(), __context.get_height()),
+                       pygame.SRCALPHA)
         pygame.draw.polygon(temp, __color, points)
         __context.blit(temp, (-__translation.x, -__translation.y))
+
 
 def draw_rect(x, y, width, height, thickness=0):
     """ Draw a rectangle """
@@ -108,6 +116,7 @@ def draw_rect(x, y, width, height, thickness=0):
     except (AssertionError, IndexError):
         pygame.draw.rect(__context, __color, (x, y, width, height), thickness)
 
+
 def draw_rounded_rect(x, y, width, height, radius):
     """ Draw a rectangle with rounded corners """
     rect = pygame.Rect(x, y, width, height)
@@ -120,7 +129,8 @@ def draw_rounded_rect(x, y, width, height, radius):
 
     circle = Surface([min(rect.size) * 3] * 2, pygame.SRCALPHA)
     pygame.draw.ellipse(circle, (0, 0, 0), circle.get_rect(), 0)
-    circle = pygame.transform.smoothscale(circle, [int(min(rect.size) * radius)] * 2)
+    circle = pygame.transform.smoothscale(circle,
+                                          [int(min(rect.size) * radius)] * 2)
 
     radius = rectangle.blit(circle, (0, 0))
     radius.bottomright = rect.bottomright
@@ -137,6 +147,7 @@ def draw_rounded_rect(x, y, width, height, radius):
     rectangle.fill((255, 255, 255, alpha), special_flags=pygame.BLEND_RGBA_MIN)
 
     __context.blit(rectangle, pos)
+
 
 def draw_text(text, x, y, aa=True, center=False, font=None):
     if font:
@@ -155,8 +166,10 @@ def draw_text(text, x, y, aa=True, center=False, font=None):
 """ State Modification """
 # TODO Only apply transformations to current context and subcontexts
 
+
 def font():
     return __font
+
 
 def reset_context():
     global __context
@@ -168,15 +181,21 @@ def reset_context():
     __translation.x = 0
     __translation.y = 0
 
+
 def rgb_to_hex(color):
     return '%02x%02x%02x' % (color.r, color.g, color.b)
+
 
 def set_color(r, g, b, a=255):
     global __color
 
-    if (0 <= r <= 255) and (0 <= g <= 255) and (0 <= b <= 255) and (0 <= a <= 255):
+    if (0 <= r <= 255) and \
+       (0 <= g <= 255) and \
+       (0 <= b <= 255) and \
+       (0 <= a <= 255):
         # TODO fix alpha
         __color = pygame.Color(r, g, b, a)
+
 
 def set_color_hex(val):
     # (#ffffff) -> (255, 255, 255)
@@ -187,6 +206,7 @@ def set_color_hex(val):
 
     set_color(*__color)
 
+
 def set_context(new_context):
     global __context
     global __context_rect
@@ -194,9 +214,11 @@ def set_context(new_context):
     __context = new_context
     __context_rect = __context.get_rect()
 
+
 def set_font(new_font):
     global __font
     __font = new_font
+
 
 def translate(x, y, absolute=True):
     global __translation
@@ -215,9 +237,11 @@ def translate(x, y, absolute=True):
 def rotate(image, degree):
     return pygame.transform.rotate(image, degree)
 
+
 def scale(image, scale):
     x, y, w, h = image.get_rect()
     return pygame.transform.scale(image, (w * scale, h * scale))
+
 
 def splice(image, frame_width, frame_height, margin_x=0, margin_y=0):
     # Arguments: image is of pygame.Surface
@@ -244,7 +268,8 @@ def splice(image, frame_width, frame_height, margin_x=0, margin_y=0):
 
 class SpriteMap(object):
 
-    def __init__(self, source, frame_width, frame_height, margin_x=0, margin_y=0, origin_x=0, origin_y=0):
+    def __init__(self, source, frame_width, frame_height,
+                 margin_x=0, margin_y=0, origin_x=0, origin_y=0):
         self.source = source
 
         self.name = ''
@@ -261,7 +286,8 @@ class SpriteMap(object):
 
         self.callback = None
 
-        self.frames = splice(source, frame_width, frame_height, margin_x, margin_y)
+        self.frames = splice(source, frame_width, frame_height,
+                             margin_x, margin_y)
         self.frame_width = frame_width
         self.frame_height = frame_height
 
@@ -269,7 +295,8 @@ class SpriteMap(object):
         # self.origin_x = origin_x
         # self.origin_y = origin_y
 
-    def add(self, name, frames, frame_rate=0, loops=False, callback=None, origin=(0,0)):
+    def add(self, name, frames, frame_rate=0, loops=False,
+            callback=None, origin=(0, 0)):
         animation = {
             "frames": frames,
             "frame_rate": frame_rate,
@@ -334,7 +361,8 @@ class SpriteMap(object):
 
                     if self.current_animation['loops']:
                         self.current_frame = 0
-                        self.time_remaining = self.current_animation['frame_rate']
+                        self.time_remaining = \
+                            self.current_animation['frame_rate']
                     else:
                         self.current_frame -= 1
                         self.time_remaining = 0

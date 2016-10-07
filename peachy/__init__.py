@@ -1,16 +1,18 @@
+""" Make game development peachy """
+
 import math
 import os
-import platform
 import sys
 
 import pygame
-from pygame.locals import *
+import pygame.locals
 
 
 def DEBUG(*objs):
     """ Print debug information to outstream (Only if DEBUG is active) """
     if PC.debug:
         print("[DEBUG]", *objs, file=sys.stderr)
+
 
 def get_version():
     return '0.0.2'
@@ -49,7 +51,7 @@ class PC(object):
 
     @staticmethod
     def quit():
-        pygame.event.post(pygame.event.Event(QUIT))
+        pygame.event.post(pygame.event.Event(pygame.locals.QUIT))
 
 
 import peachy.fs as fs
@@ -82,12 +84,8 @@ class Engine(object):
         self._render_surface = None
         self._window_surface = None
 
-        plat = ''
-
         if fps <= 0:
             PC.fps = 60
-        if debug:
-            plat = platform.system()
 
         # Initialize pygame
         os.environ['SDL_VIDEO_CENTERED'] = "1"
@@ -97,7 +95,8 @@ class Engine(object):
             pygame.display.init()
             pygame.freetype.init()
             pygame.mixer.init()
-            # Joystick module prints useless dialog
+            # TODO Joystick module prints obstructing dialog, must build from
+            # source.
             # pygame.joystick.init()
         except Exception:
             if pygame.display.get_init() is None:
@@ -121,7 +120,7 @@ class Engine(object):
 
         flags = 0
         if resizable:
-            flags += RESIZABLE
+            flags += pygame.locals.RESIZABLE
 
         self._window_surface = pygame.display.set_mode(self.window_size, flags)
         self._render_surface = pygame.Surface(self.view_size)
@@ -132,7 +131,7 @@ class Engine(object):
         try:
             graphics.__font = graphics.Font('peachy/fonts/ProggyClean.ttf', 16)
         except IOError:
-            utils.DEBUG("Debug font not found")
+            DEBUG("Debug font not found")
             # TODO exit
 
     def add_world(self, world, name=''):
@@ -167,7 +166,7 @@ class Engine(object):
             self.world.enter()
             return self.world
         else:
-            DEBUG('World not found: {0}'.format(world))
+            DEBUG('World not found: {0}'.format(world_name))
             return None
 
     def get_world(self, world_name):
@@ -188,9 +187,7 @@ class Engine(object):
         pygame.display.quit()
         pygame.display.init()
 
-        window_size = (0, 0)
-
-        if flags^FULLSCREEN:
+        if flags ^ pygame.locals.FULLSCREEN:
             monitor_info = pygame.display.Info()
 
             ratio = min(float(monitor_info.current_w) / float(PC.width),
@@ -204,7 +201,8 @@ class Engine(object):
 
         pygame.display.set_caption(*caption)
 
-        self._window_surface = pygame.display.set_mode(self.window_size, flags^FULLSCREEN, bits)
+        self._window_surface = pygame.display.set_mode(
+            self.window_size, flags ^ pygame.locals.FULLSCREEN, bits)
         # pygame.display.set_mode(window_size, flags^FULLSCREEN, bits)
         self._render_surface = pygame.Surface(self.view_size)
 
@@ -224,7 +222,8 @@ class Engine(object):
         flags = screen.get_flags()
         bits = screen.get_bitsize()
         self.window_size = (width * PC.scale, height * PC.scale)
-        self._window_surface = pygame.display.set_mode(self.window_size, flags, bits)
+        self._window_surface = pygame.display.set_mode(
+            self.window_size, flags, bits)
         self._render_surface = pygame.Surface(self.view_size)
         graphics.DEFAULT_CONTEXT = self._render_surface
         graphics.set_context(self._render_surface)
@@ -249,10 +248,10 @@ class Engine(object):
 
                 # Parse events
                 for event in pygame.event.get():
-                    if event.type == QUIT:
+                    if event.type == pygame.locals.QUIT:
                         running = False
                         break
-                    elif event.type == VIDEORESIZE:
+                    elif event.type == pygame.locals.VIDEORESIZE:
                         self.resize(event.w, event.h)
 
                 utils.Mouse._poll()
@@ -267,7 +266,8 @@ class Engine(object):
 
                 # Render - Transformations
                 # TODO speed up scaling somehow
-                pygame.transform.scale(self._render_surface, self.window_size, self._window_surface)
+                pygame.transform.scale(self._render_surface, self.window_size,
+                                       self._window_surface)
 
                 # Render - Finalize
                 pygame.display.flip()
@@ -285,7 +285,8 @@ class Engine(object):
 
         except:
             import traceback
-            print("[ERROR] Unexpected error. {0} shutting down.".format(PC.title))
+            print("[ERROR] Unexpected error. {0} shutting down."
+                  .format(PC.title))
             traceback.print_exc()
         sys.exit()
 
@@ -311,16 +312,17 @@ class Entity(object):
         self.height = 0           # height (collision detection)
 
         self.velocity_x = 0       # x-axis velocity
-        self.velocity_y =  0      # y-axis velocity
+        self.velocity_y = 0       # y-axis velocity
 
         self.active = True        # If the entity is being updated
         self.visible = True       # If the entity is being rendered
-        self.solid = False        # If the entity registers as a solid object (collision detection)
+        self.solid = False        # If the entity is used for collides_solid()
 
         self.sprite = None        # sprite used for rendering
         self.order = 0            # Used for sorting entity render order
 
-        self.container = None     # The owner of this entity. Must be set before performing any operations involving groups of entities
+        # MUST be set before perfoming any operations involving groups of ents
+        self.container = None  # The owner of this entity, usually a Stage
 
     @property
     def group(self):
@@ -650,20 +652,32 @@ class World(object):
         try:
             self.ui.update()
         except AttributeError:
-            if self.ui == None:
+            if self.ui is None:
                 pass
             else:
                 raise
 
-        self.stage.update()
+        try:
+            self.state.update()
+        except AttributeError:
+            if self.state is None:
+                self.stage.update()
+            else:
+                raise
 
     def render(self):
         try:
             self.ui.render()
         except AttributeError:
-            if self.ui == None:
+            if self.ui is None:
                 pass
             else:
                 raise
 
-        self.stage.render()
+        try:
+            self.state.render()
+        except AttributeError:
+            if self.state is None:
+                self.stage.render()
+            else:
+                raise

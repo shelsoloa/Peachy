@@ -1,6 +1,7 @@
 import os
 import sys
 
+
 def startproject(project_name):
     project_dirs = [
         '/assets', '/assets/images', '/assets/sounds',
@@ -15,7 +16,7 @@ def startproject(project_name):
             os.makedirs(project_name + subdir)
     else:
         print("[ERROR] %s directory already exists" % project_name)
-    
+
 
 def main():
     command = sys.argv[1]

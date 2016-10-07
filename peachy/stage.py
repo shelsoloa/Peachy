@@ -1,5 +1,4 @@
 import os
-import operator
 
 import peachy
 from peachy import DEBUG
@@ -12,7 +11,7 @@ def load_tiled_tmx(path):
     xml = open_xml(path)
     if xml is None:
         raise IOError('stage "{0}" not found'.format(path))
-    
+
     stage_raw = xml.getElementsByTagName('map')[0]
 
     asset_path = os.path.dirname(path)
@@ -45,10 +44,10 @@ def load_tiled_tmx(path):
         if tsx_source:
             tsx_xml = open_xml(os.path.join(asset_path, tsx_source))
             if tsx_xml is None:
-                raise IOError("[ERROR] Could not load tileset: {0}".format(tsx_source))
+                raise IOError("[ERROR] Could not load tileset: " + tsx_source)
             else:
                 tileset_raw = tsx_xml.getElementsByTagName('tileset')[0]
-        
+
         tileset.name = tileset_raw.getAttribute('name')
         tileset.tilewidth = int(tileset_raw.getAttribute('tilewidth'))
         tileset.tileheight = int(tileset_raw.getAttribute('tileheight'))
@@ -59,12 +58,12 @@ def load_tiled_tmx(path):
             image_raw = tileset_raw.getElementsByTagName('image')[0]
             source = image_raw.getAttribute('source')
             source_path = os.path.abspath(os.path.join(asset_path, source))
-            
+
             tileset.image = peachy.fs.load_image(tileset.name, source_path)
 
         stage.tileset_images += peachy.graphics.splice(tileset.image,
-                                            tileset.tilewidth,
-                                            tileset.tileheight)
+                                                       tileset.tilewidth,
+                                                       tileset.tileheight)
 
         properties = tileset_raw.getElementsByTagName('property')
         for prop in properties:
@@ -110,7 +109,7 @@ def load_tiled_tmx(path):
             layer.properties[property_name] = property_value
 
         stage.layers.append(layer)
-    
+
     # Load objects
     for object_group in stage_raw.getElementsByTagName('objectgroup'):
 
@@ -137,7 +136,7 @@ def load_tiled_tmx(path):
 
             # parse polygon
             polygon = object_raw.getElementsByTagName('polygon') or \
-                      object_raw.getElementsByTagName('polyline')
+                object_raw.getElementsByTagName('polyline')
             if polygon:
                 points_raw = polygon[0].getAttribute('points').split()
                 for raw_point in points_raw:
@@ -177,8 +176,8 @@ def render_layer(stage, layer):
 
     try:
         for tile in layer.tiles:
-            peachy.graphics.draw(stage.tileset_images[tile.gid - 1], 
-                tile.x, tile.y)
+            peachy.graphics.draw(stage.tileset_images[tile.gid - 1],
+                                 tile.x, tile.y)
     except AttributeError:
         DEBUG('[ERROR] Layer could not be rendered ' + layer)
 
@@ -199,7 +198,7 @@ class Stage(object):
     def enter(self):
         """ Called after entering this stage """
         return
-    
+
     def exit(self):
         """ Called before exiting this stage """
         return
@@ -368,7 +367,8 @@ class AStarGrid(object):
         x, y = location
         results = []
 
-        for translation in [(0, 1), (0, -1), (1, 0), (1, 1), (1, -1), (-1, 0), (-1, 1), (-1, -1)]:
+        for translation in [(0, 1), (0, -1), (1, 0), (1, 1),
+                            (1, -1), (-1, 0), (-1, 1), (-1, -1)]:
 
             trans_x, trans_y = translation
             destination = (x + trans_x, y + trans_y)
@@ -385,5 +385,3 @@ class AStarGrid(object):
 
         results = filter(self.in_bounds, results)
         return results
-
-

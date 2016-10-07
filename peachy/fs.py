@@ -17,7 +17,7 @@ def resource_loader(f):
         if asset_name in resources:
             DEBUG("Resource {{{0}}} is already loaded".format(asset_name))
             return resources[asset_name]
-        
+
         try:
             assert os.path.isfile(path)
         except AssertionError:
@@ -68,9 +68,9 @@ def load_raw_data(file_name):
 
 
 def get_image(asset_name):
-    """ 
+    """
     Retrieve an image from resources OR load from storage.
-    
+
     If the image is not stored in resources then this function will attempt to
     find it using asset_name as path.
 
@@ -85,9 +85,9 @@ def get_image(asset_name):
 
 
 def get_font(asset_name, pt_size=-1):
-    """ 
+    """
     Retrieve a font from resources OR load from storage.
-    
+
     If the font is not stored in resources then this function will attempt to
     find it using asset_name as path.
 
@@ -102,10 +102,10 @@ def get_font(asset_name, pt_size=-1):
 
 
 def get_sound(asset_name):
-    """ 
+    """
     Retrieve a sound from resources OR load from storage.
-    
-    If the sound is not stored in resources then this function will attempt to 
+
+    If the sound is not stored in resources then this function will attempt to
     find it using asset_name as path.
 
     If a sound is not found, then a pygame.error is raised.
@@ -126,7 +126,7 @@ def load_image(asset_name, path, store=True):
         image.convert_alpha()
         if store:
             if asset_name in resources:
-                DEBUG('[WARN] resource %s is being overriden by %s' % 
+                DEBUG('[WARN] resource %s is being overriden by %s' %
                       (asset_name, path))
             resources[asset_name] = image
         return image
@@ -143,7 +143,7 @@ def load_font(asset_name, path, point_size, store=True):
         font = peachy.graphics.Font(path, point_size)
         if store:
             if asset_name in resources:
-                DEBUG('[WARN] resource %s is being overriden by %s' % 
+                DEBUG('[WARN] resource %s is being overriden by %s' %
                       (asset_name, path))
             resources[asset_name] = font
         return font
@@ -162,7 +162,7 @@ def load_sound(asset_name, path, store=True):
         sound = peachy.audio.Sound(path)
         if store:
             if asset_name in resources:
-                DEBUG('[WARN] resource %s is being overriden by %s' % 
+                DEBUG('[WARN] resource %s is being overriden by %s' %
                       (asset_name, path))
             resources[asset_name] = sound
         return sound
@@ -170,4 +170,3 @@ def load_sound(asset_name, path, store=True):
     except pygame.error:
         print('[ERROR] loading sound: ' + path)
         return None
-

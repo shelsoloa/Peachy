@@ -1,12 +1,14 @@
 import peachy
 
+
 def _iter_widget(widget):
     for child in widget.children:
         if child.children:
-            for c in iter_widget(child):
+            for c in _iter_widget(child):
                 yield c
         else:
             yield child
+
 
 class UICanvas(object):
     def __init__(self, world):
@@ -20,8 +22,10 @@ class UICanvas(object):
 
     @focused_widget.setter
     def focused_widget(self, widget):
-        if self._focused_widget != None:
+        if self._focused_widget:
             self._focused_widget.focused = False
+        if widget:
+            widget.focused = True
         self._focused_widget = widget
 
     """
@@ -32,7 +36,7 @@ class UICanvas(object):
     """
     def all_widgets(self):
         # Iteration is reversed because widgets are processed FIFO
-        for w in range(len(self.widgets)-1, -1, -1):
+        for w in range(len(self.widgets) - 1, -1, -1):
             widget = self.widgets[w]
             # Wraps iter_widget to allow for iteration of UICanvas widgets
             for child in _iter_widget(widget):
@@ -46,9 +50,11 @@ class UICanvas(object):
 
     def add(self, widget):
         widget.parent = self
-        if self.focused_widget == None:
+        if self.focused_widget is None:
+            widget.focused = True
             self.focused_widget = widget
         self.widgets.append(widget)
+        return widget
 
     def remove(self, widget):
         widget.parent = None
@@ -77,7 +83,8 @@ class UICanvas(object):
 
         for widget in self.all_widgets():
             if widget.x <= mx <= widget.x + widget.width and \
-               widget.y <= my <= widget.y + widget.height:
+               widget.y <= my <= widget.y + widget.height and \
+               widget.active:
                 widget.clicked(mx, my)
                 while widget:
                     if widget.focusable:
@@ -123,7 +130,7 @@ class Widget(object):
     def focused(self, value):
         if self.focusable:
             self._focus = value
-            if value == True and self.parent != None:
+            if value and self.parent is not None:
                 self.parent.focused = True
         else:
             raise AttributeError("This Widget cannot be focused.")

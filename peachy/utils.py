@@ -1,9 +1,6 @@
-import os
 import pygame
-from pygame.locals import *
-
 import peachy
-from peachy import DEBUG
+
 
 class Point(object):
     def __init__(self, x=0, y=0):
@@ -53,7 +50,7 @@ class Counter(object):
         if not self.finished:
             self.current += self.step
             self.current = round(self.current, 2)
-            if self.current == self.target:  # TODO allow for over shooting target
+            if self.current == self.target:  # TODO allow for going over target
                 if self._reverse:
                     self.reverse()
                 elif self.repeat:
@@ -145,6 +142,7 @@ class Camera(object):
     def translate(self):
         peachy.graphics.translate(self.x, self.y)
 
+
 class Mouse(object):
     """ Mouse input & tracking """
     current_state = (False, False, False)
@@ -187,10 +185,14 @@ class Mouse(object):
 
     @staticmethod
     def _get_button_code(button):
-        if button == 'left': return 0
-        if button == 'right': return 2
-        if button == 'middle' or button == 'center': return 1
+        if button == 'left':
+            return 0
+        if button == 'right':
+            return 2
+        if button == 'middle' or button == 'center':
+            return 1
         return -1
+
 
 class Keys(object):
     """ Keyboard & Mouse input helper """
@@ -213,14 +215,15 @@ class Keys(object):
     @staticmethod
     def pressed(key):
         if key == 'any':
-            for code in xrange(len(Keys.current_state)):
+            for code in range(len(Keys.current_state)):
                 if Keys.current_state[code] and not Keys.previous_state[code]:
                     return True
             return False
         else:
             code = Keys._get_key_code(key)
             if code != -1:
-                return Keys.current_state[code] and not Keys.previous_state[code]
+                return Keys.current_state[code] and not \
+                    Keys.previous_state[code]
             return False
 
     @staticmethod
@@ -238,137 +241,137 @@ class Keys(object):
     @staticmethod
     def _get_key_code(key):
         if key == 'enter':
-            return K_RETURN
+            return pygame.locals.K_RETURN
         elif key == 'escape':
-            return K_ESCAPE
+            return pygame.locals.K_ESCAPE
         elif key == 'lshift':
-            return K_LSHIFT
+            return pygame.locals.K_LSHIFT
         elif key == 'rshift':
-            return K_RSHIFT
+            return pygame.locals.K_RSHIFT
         elif key == 'space' or key == ' ':
-            return K_SPACE
+            return pygame.locals.K_SPACE
         elif key == 'left':
-            return K_LEFT
+            return pygame.locals.K_LEFT
         elif key == 'right':
-            return K_RIGHT
+            return pygame.locals.K_RIGHT
         elif key == 'up':
-            return K_UP
+            return pygame.locals.K_UP
         elif key == 'down':
-            return K_DOWN
+            return pygame.locals.K_DOWN
         elif key == 'backspace':
-            return K_BACKSPACE
+            return pygame.locals.K_BACKSPACE
         elif key == 'delete':
-            return K_DELETE
+            return pygame.locals.K_DELETE
         elif key == 'tab':
-            return K_TAB
+            return pygame.locals.K_TAB
 
         elif key == '1':
-            return K_1;
+            return pygame.locals.K_1
         elif key == '2':
-            return K_2;
+            return pygame.locals.K_2
         elif key == '3':
-            return K_3;
+            return pygame.locals.K_3
         elif key == '4':
-            return K_4;
+            return pygame.locals.K_4
         elif key == '5':
-            return K_5;
+            return pygame.locals.K_5
         elif key == '6':
-            return K_6;
+            return pygame.locals.K_6
         elif key == '7':
-            return K_7;
+            return pygame.locals.K_7
         elif key == '8':
-            return K_8;
+            return pygame.locals.K_8
         elif key == '9':
-            return K_9;
+            return pygame.locals.K_9
         elif key == '0':
-            return K_0;
+            return pygame.locals.K_0
 
         elif key == 'F1':
-            return K_F1;
+            return pygame.locals.K_F1
         elif key == 'F2':
-            return K_F2;
+            return pygame.locals.K_F2
         elif key == 'F3':
-            return K_F3;
+            return pygame.locals.K_F3
         elif key == 'F4':
-            return K_F4;
+            return pygame.locals.K_F4
         elif key == 'F5':
-            return K_F5;
+            return pygame.locals.K_F5
         elif key == 'F6':
-            return K_F6;
+            return pygame.locals.K_F6
         elif key == 'F7':
-            return K_F7;
+            return pygame.locals.K_F7
         elif key == 'F8':
-            return K_F8;
+            return pygame.locals.K_F8
         elif key == 'F9':
-            return K_F9;
+            return pygame.locals.K_F9
         elif key == 'F10':
-            return K_F10;
+            return pygame.locals.K_F10
         elif key == 'F11':
-            return K_F11;
+            return pygame.locals.K_F11
         elif key == 'F12':
-            return K_F12;
+            return pygame.locals.K_F12
 
         elif key == '+':
-            return K_KP_PLUS
+            return pygame.locals.K_KP_PLUS
         elif key == '-':
-            return K_KP_MINUS
+            return pygame.locals.K_KP_MINUS
         elif key == '_':
-            return K_UNDERSCORE
+            return pygame.locals.K_UNDERSCORE
         elif key == '.':
-            return K_PERIOD
+            return pygame.locals.K_PERIOD
 
         elif key == 'a':
-            return K_a
+            return pygame.locals.K_a
         elif key == 'b':
-            return K_b
+            return pygame.locals.K_b
         elif key == 'c':
-            return K_c
+            return pygame.locals.K_c
         elif key == 'd':
-            return K_d
+            return pygame.locals.K_d
         elif key == 'e':
-            return K_e
+            return pygame.locals.K_e
         elif key == 'f':
-            return K_f
+            return pygame.locals.K_f
         elif key == 'g':
-            return K_g
+            return pygame.locals.K_g
         elif key == 'h':
-            return K_h
+            return pygame.locals.K_h
         elif key == 'i':
-            return K_i
+            return pygame.locals.K_i
         elif key == 'j':
-            return K_j
+            return pygame.locals.K_j
         elif key == 'k':
-            return K_k
+            return pygame.locals.K_k
         elif key == 'l':
-            return K_l
+            return pygame.locals.K_l
         elif key == 'm':
-            return K_m
+            return pygame.locals.K_m
         elif key == 'n':
-            return K_n
+            return pygame.locals.K_n
         elif key == 'o':
-            return K_o
+            return pygame.locals.K_o
         elif key == 'p':
-            return K_p
+            return pygame.locals.K_p
         elif key == 'q':
-            return K_q
+            return pygame.locals.K_q
         elif key == 'r':
-            return K_r
+            return pygame.locals.K_r
         elif key == 's':
-            return K_s
+            return pygame.locals.K_s
         elif key == 't':
-            return K_t
+            return pygame.locals.K_t
         elif key == 'u':
-            return K_u
+            return pygame.locals.K_u
         elif key == 'v':
-            return K_v
+            return pygame.locals.K_v
         elif key == 'w':
-            return K_w
+            return pygame.locals.K_w
         elif key == 'x':
-            return K_x
+            return pygame.locals.K_x
         elif key == 'y':
-            return K_y
+            return pygame.locals.K_y
         elif key == 'z':
-            return K_z
+            return pygame.locals.K_z
         else:
             return -1
 
@@ -384,11 +387,11 @@ class TypeWriter(object):
 
     def update(self):
         keys = [
-            '1','2','3','4','5','6','7','8','9','0','.','_','-',
-            'a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q',
-            'r','s','t','u','v','w','x','y','z',
-            'A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q',
-            'R','S','T','U','V','W','X','Y','Z', ' '
+            '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '.', '_', '-',
+            'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm',
+            'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
+            'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
+            'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', ' '
         ]
 
         shift = Keys.down('lshift') or Keys.down('rshift')
