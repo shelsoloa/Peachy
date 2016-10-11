@@ -139,6 +139,7 @@ class Widget(object):
         """ Add a child to this widget """
         widget.parent = self
         self.children.append(widget)
+        return widget
 
     def clicked(self, x, y):
         return
@@ -166,3 +167,41 @@ class Widget(object):
     def update_children(self):
         for child in self.children:
             child.update()
+
+
+class ButtonWidget(Widget):
+    """
+    The ButtonWidget connects a function to its click event
+    Use bind() to connect a function that will be executed by clicked()
+    """
+
+    def __init__(self, x, y, width, height,
+                 name='', label='',
+                 background_color=None, label_color=None):
+        super().__init__(x, y, width, height, name)
+
+        self.__action = None
+        self.__action_args = None
+        self.background_color = background_color
+        self.label_color = label_color
+        self.label = label
+
+    def clicked(self, x, y):
+        self.__action(*self.__action_args)
+
+    def bind(self, f, *args):
+        self.__action = f
+        self.__action_args = args
+
+    def render(self):
+        try:
+            peachy.graphics.set_color(*self.background_color)
+            peachy.graphics.draw_entity_rect(self)
+        except AttributeError:
+            pass
+
+        try:
+            peachy.graphics.set_color(*self.label_color)
+            peachy.graphics.draw_text(self.label, self.x, self.y)
+        except AttributeError:
+            pass
