@@ -141,6 +141,14 @@ class Widget(object):
         self.children.append(widget)
         return widget
 
+    def all_children(self):
+        # Iteration is reverse because widgets are processed FIFO
+        for w in range(len(self.children) - 1, -1, -1):
+            widget = self.children[w]
+            for child in _iter_widget(widget):
+                yield child
+            yield widget
+
     def clicked(self, x, y):
         return
 
@@ -156,6 +164,12 @@ class Widget(object):
     def render_children(self):
         for child in self.children:
             child.render()
+
+    def remove(self, widget):
+        widget.parent = None
+        if self.focused_widget == widget:
+            self.focused_widget = self
+        self.widgets.remove(widget)
 
     def resize(self):
         for widget in self.children:
@@ -197,11 +211,65 @@ class ButtonWidget(Widget):
         try:
             peachy.graphics.set_color(*self.background_color)
             peachy.graphics.draw_entity_rect(self)
-        except AttributeError:
+        except (AttributeError, TypeError):
             pass
 
         try:
             peachy.graphics.set_color(*self.label_color)
             peachy.graphics.draw_text(self.label, self.x, self.y)
-        except AttributeError:
+        except (AttributeError, TypeError):
             pass
+
+
+class DialogWidget(Widget):
+    """
+    The DialogWidget can be moved and is always on top
+    """
+
+    def __init__(self, x, y, width=0, height=0, name='', label=''):
+        super().__init__(x, y, width, height, name)
+        self.background_color = (0, 0, 0)
+        self.highlight_color = (255, 255, 255)
+        self.label = label
+        self.previous_mx = None
+        self.previous_my = None
+        self.dragging = False
+
+    def close(self):
+        self.parent.remove(self)
+        self.active = False
+        self.visible = False
+
+    def render(self):
+        peachy.graphics.set_color(*self.background_color)
+        peachy.graphics.draw_entity_rect(self)
+        peachy.graphics.set_color(*self.highlight_color)
+        peachy.graphics.draw_rect(self.x, self.y, self.width, 16)
+        peachy.graphics.set_color(*self.background_color)
+        peachy.graphics.draw_text(self.label, self.x, self.y)
+
+    def update(self):
+        if peachy.utils.Mouse.released('left'):
+            self.previous_mx = None
+            self.previous_my = None
+            self.dragging = False
+
+        elif self.dragging:
+            dx = peachy.utils.Mouse.x - self.previous_mx
+            dy = peachy.utils.Mouse.y - self.previous_my
+            self.x += dx
+            self.y += dy
+            for child in self.all_children():
+                child.x += dx
+                child.y += dy
+            self.previous_mx = peachy.utils.Mouse.x
+            self.previous_my = peachy.utils.Mouse.y
+
+        elif self.focused and peachy.utils.Mouse.pressed('left'):
+            mx = peachy.utils.Mouse.x
+            my = peachy.utils.Mouse.y
+            if self.x <= mx <= self.x + self.width and \
+               self.y <= my <= self.y + 16:
+                self.previous_mx = mx
+                self.previous_my = my
+                self.dragging = True
