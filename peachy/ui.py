@@ -194,18 +194,17 @@ class ButtonWidget(Widget):
                  background_color=None, label_color=None):
         super().__init__(x, y, width, height, name)
 
-        self.__action = None
-        self.__action_args = None
+        self.__actions = []
         self.background_color = background_color
         self.label_color = label_color
         self.label = label
 
     def clicked(self, x, y):
-        self.__action(*self.__action_args)
+        for action, args in self.__actions:
+            action(*args)
 
     def bind(self, f, *args):
-        self.__action = f
-        self.__action_args = args
+        self.__actions.append((f, args))
 
     def render(self):
         try:
