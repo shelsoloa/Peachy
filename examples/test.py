@@ -1,13 +1,12 @@
 import peachy
-from peachy import PC, Engine, World
 
 
 def main():
     # Create Game
-    game = Engine((320, 240), 'Game')
+    game = peachy.Engine((320, 240), 'Game', debug=True)
 
     # Create and configure world
-    world = game.add_world(World('Play'))
+    world = game.add_world(peachy.World('Play'))
     world.stage.add(Nub(100, 100))
 
     # Run game
@@ -26,13 +25,13 @@ class Nub(peachy.Entity):
         peachy.graphics.draw_entity_rect(self)
 
     def update(self):
-        if peachy.utils.Input.down('left'):
+        if peachy.utils.Keys.down('left'):
             self.x -= 1
-        if peachy.utils.Input.down('right'):
+        if peachy.utils.Keys.down('right'):
             self.x += 1
-        if peachy.utils.Input.down('up'):
+        if peachy.utils.Keys.down('up'):
             self.y -= 1
-        if peachy.utils.Input.down('down'):
+        if peachy.utils.Keys.down('down'):
             self.y += 1
 
 

@@ -1,7 +1,6 @@
 import os
 
 import peachy
-from peachy import DEBUG
 from peachy.fs import open_xml
 
 
@@ -179,7 +178,7 @@ def render_layer(stage, layer):
             peachy.graphics.draw(stage.tileset_images[tile.gid - 1],
                                  tile.x, tile.y)
     except AttributeError:
-        DEBUG('[ERROR] Layer could not be rendered ' + layer)
+        peachy.DEBUG('[ERROR] Layer could not be rendered ' + layer)
 
 
 class Stage(object):

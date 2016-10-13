@@ -1,4 +1,5 @@
 *.pyc
 peachy/*.pyc
+examples/snippet.py
 .idea
 .idea/*

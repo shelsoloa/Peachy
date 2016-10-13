@@ -7,6 +7,14 @@ import sys
 import pygame
 import pygame.locals
 
+# Import all submodules
+import peachy.audio
+import peachy.fs
+import peachy.graphics
+import peachy.stage
+import peachy.utils
+from peachy.PC import PC
+
 
 def DEBUG(*objs):
     """ Print debug information to outstream (Only if DEBUG is active) """
@@ -16,49 +24,6 @@ def DEBUG(*objs):
 
 def get_version():
     return '0.0.2'
-
-
-class PC(object):
-    """
-    PC (Peachy Controller)
-    This is the central access point for classes within the Peachy framework.
-    This class contains references to the window, world, and entity room. Its
-    values are set after startup.
-    This is the only class that can be accessed by submodules within the Peachy
-    framework.
-    """
-
-    fps = 0
-    scale = -1
-    title = ''
-
-    background_color = (0, 0, 0)
-
-    width = 0
-    height = 0
-
-    engine = None
-
-    debug = False
-
-    @property
-    def world(self):
-        return PC.engine.world
-
-    @property
-    def stage(self):
-        return PC.engine.world.stage
-
-    @staticmethod
-    def quit():
-        pygame.event.post(pygame.event.Event(pygame.locals.QUIT))
-
-
-import peachy.fs as fs
-import peachy.graphics as graphics
-import peachy.utils as utils
-import peachy.audio as audio
-import peachy.stage as stage
 
 
 class Engine(object):
@@ -102,7 +67,7 @@ class Engine(object):
             if pygame.display.get_init() is None:
                 print("[ERROR] Could not initialize pygame display. Abort")
             elif pygame.font.get_init() is None:
-                print("[ERROR] Could not initialize pygame font. About!")
+                print("[ERROR] Could not initialize pygame font. Abort!")
             elif pygame.freetype.get_init() is None:
                 print("[ERROR] Could not initialize pygame freetype. Abort!")
             elif pygame.mixer.get_init() is None:
@@ -111,8 +76,8 @@ class Engine(object):
 
         # General initialization
         pygame.display.set_caption(title)
-        utils.Keys.init()
-        utils.Mouse.init()
+        peachy.utils.Keys.init()
+        peachy.utils.Mouse.init()
 
         # Initialize display (pygame)
         self.view_size = (PC.width, PC.height)
@@ -125,11 +90,11 @@ class Engine(object):
         self._window_surface = pygame.display.set_mode(self.window_size, flags)
         self._render_surface = pygame.Surface(self.view_size)
 
-        graphics.DEFAULT_CONTEXT = self._render_surface
-        graphics.set_context(self._render_surface)
+        peachy.graphics.DEFAULT_CONTEXT = self._render_surface
+        peachy.graphics.set_context(self._render_surface)
 
         try:
-            graphics.__font = graphics.Font('peachy/fonts/ProggyClean.ttf', 16)
+            peachy.graphics.__font = peachy.graphics.Font('peachy/fonts/ProggyClean.ttf', 16)
         except IOError:
             DEBUG("Debug font not found")
             # TODO exit
@@ -206,8 +171,8 @@ class Engine(object):
         # pygame.display.set_mode(window_size, flags^FULLSCREEN, bits)
         self._render_surface = pygame.Surface(self.view_size)
 
-        graphics.DEFAULT_CONTEXT = self._render_surface
-        graphics.set_context(self._render_surface)
+        peachy.graphics.DEFAULT_CONTEXT = self._render_surface
+        peachy.graphics.set_context(self._render_surface)
 
     def preload(self):
         """
@@ -225,8 +190,8 @@ class Engine(object):
         self._window_surface = pygame.display.set_mode(
             self.window_size, flags, bits)
         self._render_surface = pygame.Surface(self.view_size)
-        graphics.DEFAULT_CONTEXT = self._render_surface
-        graphics.set_context(self._render_surface)
+        peachy.graphics.DEFAULT_CONTEXT = self._render_surface
+        peachy.graphics.set_context(self._render_surface)
         PC.width = width
         PC.height = height
 
@@ -234,8 +199,8 @@ class Engine(object):
         """ Start game loop (calls preload before running game loop) """
 
         game_timer = pygame.time.Clock()
-        utils.Mouse._poll()
-        utils.Keys._poll()
+        peachy.utils.Mouse._poll()
+        peachy.utils.Keys._poll()
 
         self.preload()
         self.world.enter()
@@ -254,8 +219,8 @@ class Engine(object):
                     elif event.type == pygame.locals.VIDEORESIZE:
                         self.resize(event.w, event.h)
 
-                utils.Mouse._poll()
-                utils.Keys._poll()
+                peachy.utils.Mouse._poll()
+                peachy.utils.Keys._poll()
 
                 # Update
                 self.world.update()
@@ -587,7 +552,7 @@ class World(object):
     def __init__(self, name):
         self.name = name
         self.ui = None
-        self.stage = stage.Stage(self)
+        self.stage = peachy.stage.Stage(self)
         self.state = None
         self.states = {}
 

@@ -4,7 +4,7 @@ import peachy
 class TypeWorld(peachy.World):
     def __init__(self):
         super().__init__('test')
-        self.typewriter = peachy.utils.TypeWriter("Typing")
+        self.typewriter = peachy.utils.TextCapture("Typing")
 
     def render(self):
 
@@ -17,6 +17,6 @@ class TypeWorld(peachy.World):
 
 game = peachy.Engine((320, 240), 'Typewriter Test')
 # TODO fix default font bug
-peachy.fs.load_font('Proggy', 'peachy/fonts/ProggyClean.ttf', 16)
+peachy.fs.load_font('Proggy', '../peachy/fonts/ProggyClean.ttf', 16)
 world = game.add_world(TypeWorld())
 game.run()

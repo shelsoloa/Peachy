@@ -376,9 +376,9 @@ class Keys(object):
             return -1
 
 
-class TypeWriter(object):
+class TextCapture(object):
     """
-    The typewriter takes all alphanumeric input recorded by Keys and stores it
+    The textcapture takes all alphanumeric input recorded by Keys and stores it
     inside of self.value. This is useful for text input like naming things.
     """
 
@@ -390,8 +390,7 @@ class TypeWriter(object):
             '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '.', '_', '-',
             'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm',
             'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
-            'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
-            'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', ' '
+            ' '
         ]
 
         shift = Keys.down('lshift') or Keys.down('rshift')
