@@ -378,7 +378,7 @@ class Keys(object):
 
 class TextCapture(object):
     """
-    The textcapture takes all alphanumeric input recorded by Keys and stores it
+    The TextCapture takes all alphanumeric input recorded by Keys and stores it
     inside of self.value. This is useful for text input like naming things.
     """
 

@@ -292,11 +292,12 @@ class SpriteMap(object):
         self.frame_height = frame_height
 
         self.origin = Point(origin_x, origin_y)
-        # self.origin_x = origin_x
-        # self.origin_y = origin_y
 
     def add(self, name, frames, frame_rate=0, loops=False,
-            callback=None, origin=(0, 0)):
+            callback=None, origin=None):
+        if origin is None and self.origin is not None:
+            origin = (self.origin.x, self.origin.y)
+
         animation = {
             "frames": frames,
             "frame_rate": frame_rate,
