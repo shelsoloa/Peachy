@@ -155,6 +155,10 @@ class Widget(object):
     def child_clicked(self):
         return
 
+    def move(self, x, y):
+        self.x = x
+        self.y = y
+
     def normalize(self, x, y):
         return (x - self.x, y - self.y)
 
@@ -163,7 +167,8 @@ class Widget(object):
 
     def render_children(self):
         for child in self.children:
-            child.render()
+            if child.visible:
+                child.render()
 
     def remove(self, widget):
         widget.parent = None
@@ -180,7 +185,8 @@ class Widget(object):
 
     def update_children(self):
         for child in self.children:
-            child.update()
+            if child.active:
+                child.update()
 
 
 class ButtonWidget(Widget):
@@ -272,3 +278,20 @@ class DialogWidget(Widget):
                 self.previous_mx = mx
                 self.previous_my = my
                 self.dragging = True
+
+
+class TextBoxWidget(Widget):
+
+    def __init__(self, x, y, width, height, name=''):
+        super().__init__(x, y, width, height, name)
+        self.text_capture = peachy.utils.TextCapture()
+
+    def update(self):
+        if self.focused:
+            self.text_capture.update()
+
+    def render(self):
+        peachy.graphics.set_color(255, 255, 255)
+        peachy.graphics.draw_rect(self.x, self.y, self.width, self.height)
+        peachy.graphics.set_color(0, 0, 0)
+        peachy.graphics.draw_text(self.text_capture.value, self.x, self.y)
