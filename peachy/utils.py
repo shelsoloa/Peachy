@@ -182,7 +182,7 @@ class Mouse(object):
         return -1
 
 
-class Keys(object):
+class Key(object):
     """ Keyboard & Mouse input helper """
 
     current_state = []
@@ -190,41 +190,41 @@ class Keys(object):
 
     @staticmethod
     def init():
-        Keys.current_state = pygame.key.get_pressed()
-        Keys.previous_state = pygame.key.get_pressed()
+        Key.current_state = pygame.key.get_pressed()
+        Key.previous_state = pygame.key.get_pressed()
 
     @staticmethod
     def down(key):
-        code = Keys._get_key_code(key)
+        code = Key._get_key_code(key)
         if code != -1:
-            return Keys.current_state[code]
+            return Key.current_state[code]
         return False
 
     @staticmethod
     def pressed(key):
         if key == 'any':
-            for code in range(len(Keys.current_state)):
-                if Keys.current_state[code] and not Keys.previous_state[code]:
+            for code in range(len(Key.current_state)):
+                if Key.current_state[code] and not Key.previous_state[code]:
                     return True
             return False
         else:
-            code = Keys._get_key_code(key)
+            code = Key._get_key_code(key)
             if code != -1:
-                return Keys.current_state[code] and not \
-                    Keys.previous_state[code]
+                return Key.current_state[code] and not \
+                    Key.previous_state[code]
             return False
 
     @staticmethod
     def released(key):
-        code = Keys._get_key_code(key)
+        code = Key._get_key_code(key)
         if code != -1:
-            return not Keys.current_state[code] and Keys.previous_state[code]
+            return not Key.current_state[code] and Key.previous_state[code]
         return False
 
     @staticmethod
     def _poll():
-        Keys.previous_state = Keys.current_state
-        Keys.current_state = pygame.key.get_pressed()
+        Key.previous_state = Key.current_state
+        Key.current_state = pygame.key.get_pressed()
 
     @staticmethod
     def _get_key_code(key):
@@ -366,7 +366,7 @@ class Keys(object):
 
 class TextCapture(object):
     """
-    The TextCapture takes all alphanumeric input recorded by Keys and stores it
+    The TextCapture takes all alphanumeric input recorded by Key and stores it
     inside of self.value. This is useful for text input like naming things.
     """
 
@@ -381,13 +381,13 @@ class TextCapture(object):
             ' '
         ]
 
-        shift = Keys.down('lshift') or Keys.down('rshift')
+        shift = Key.down('lshift') or Key.down('rshift')
 
-        if Keys.pressed('backspace') or Keys.pressed('delete'):
+        if Key.pressed('backspace') or Key.pressed('delete'):
             self.value = self.value[:-1]
 
         for key in keys:
-            if Keys.pressed(key):
+            if Key.pressed(key):
                 if shift:
                     self.value += key.upper()
                 else:

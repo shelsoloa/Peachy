@@ -23,7 +23,7 @@ def DEBUG(*objs):
 
 
 def get_version():
-    return '0.0.2'
+    return '0.0.3'
 
 
 class Engine(object):
@@ -78,7 +78,7 @@ class Engine(object):
 
         # General initialization
         pygame.display.set_caption(title)
-        peachy.utils.Keys.init()
+        peachy.utils.Key.init()
         peachy.utils.Mouse.init()
 
         # Initialize display (pygame)
@@ -96,7 +96,8 @@ class Engine(object):
         peachy.graphics.set_context(self._render_surface)
 
         try:
-            peachy.graphics.__font = peachy.graphics.Font('peachy/fonts/ProggyClean.ttf', 16)
+            peachy.graphics.__font = peachy.graphics.Font(
+                'peachy/fonts/ProggyClean.ttf', 16)
         except IOError:
             DEBUG("Debug font not found")
             # TODO exit
@@ -131,6 +132,7 @@ class Engine(object):
             self.world.exit()
             self.world = self.worlds[world_name]
             self.world.enter()
+            PC.world = self.world
             return self.world
         else:
             DEBUG('World not found: {0}'.format(world_name))
@@ -188,7 +190,7 @@ class Engine(object):
         screen = pygame.display.get_surface()
         flags = screen.get_flags()
         bits = screen.get_bitsize()
-        
+
         self.window_size = (width, height)
         self._window_surface = \
             pygame.display.set_mode(self.window_size, flags, bits)
@@ -206,7 +208,7 @@ class Engine(object):
 
         game_timer = pygame.time.Clock()
         peachy.utils.Mouse._poll()
-        peachy.utils.Keys._poll()
+        peachy.utils.Key._poll()
 
         self.preload()
         self.world.enter()
@@ -226,14 +228,13 @@ class Engine(object):
                         self.resize(event.w, event.h)
 
                 peachy.utils.Mouse._poll()
-                peachy.utils.Keys._poll()
+                peachy.utils.Key._poll()
 
                 # Update
-                self.world.update()
+                self.update()
 
                 # Render - Draw World
-                self._render_surface.fill(PC.background_color)
-                self.world.render()
+                self.render()
 
                 # Render - Transformations
                 # TODO speed up scaling somehow
@@ -261,11 +262,18 @@ class Engine(object):
             traceback.print_exc()
         sys.exit()
 
+    def render(self):
+        self._render_surface.fill(PC.background_color)
+        self.world.render()
+
     def shutdown(self):
         """ Shutdown procedure called right before exiting Peachy """
 
         for _, world in self.worlds.items():
             world.shutdown()
+
+    def update(self):
+        self.world.update()
 
 
 class Entity(object):
@@ -303,9 +311,26 @@ class Entity(object):
     def group(self, groups):
         self.__groups = groups.split()
 
+    @property
     def center(self):
         """ Return center coordinates of entity in a tuple """
         return (self.x + self.width / 2, self.y + self.height / 2)
+
+    @property
+    def center_x(self):
+        return self.x + self.width / 2
+
+    @center_x.setter
+    def center_x(self, cx):
+        self.x = cx - self.width / 2
+
+    @property
+    def center_y(self):
+        return self.y + self.height / 2
+
+    @center_y.setter
+    def center_y(self, cy):
+        self.y = cy - self.height / 2
 
     def destroy(self):
         """
