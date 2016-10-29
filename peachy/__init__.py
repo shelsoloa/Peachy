@@ -287,7 +287,7 @@ class Entity(object):
         self.order = 0            # Used for sorting entity render order
 
         # MUST be set before perfoming any operations involving groups of ents
-        self.container = None  # The owner of this entity, usually a Stage
+        self.container = None  # The owner of this entity, usually a Room
 
     @property
     def group(self):
@@ -339,15 +339,9 @@ class Entity(object):
             y = self.y
 
         collisions = []
-        entities = self.container.get_group(group)
-
-        try:
-            entities.remove(self)
-        except ValueError:
-            pass
-
-        for entity in entities:
-            if entity.active and self.collides(entity, x, y):
+        for entity in self.container.get_group(group):
+            if entity is not self and entity.active and \
+               self.collides(entity, x, y):
                 collisions.append(entity)
         return collisions
 
@@ -361,21 +355,8 @@ class Entity(object):
             x = self.x
             y = self.y
 
-        # receive possible entities
-        entities = []
-        for group in groups:
-            entities += self.container.get_group(group)
-
-        # remove duplicates
-        keys = {}
-        for e in entities:
-            keys[e] = 1
-        keys.pop(self, None)
-        entities = keys.keys()
-
-        # collision detection
         collisions = []
-        for entity in entities:
+        for entity in self.container.get_group(*groups):
             if entity.active and self.collides(entity, x, y):
                 collisions.append(entity)
         return collisions
@@ -477,9 +458,8 @@ class Entity(object):
 
         collisions = []
         for entity in self.container:
-            if entity == self or not entity.active:
-                continue
-            elif entity.solid and self.collides(entity, x, y):
+            if entity is not self and entity.active and entity.solid and \
+               self.collides(entity, x, y):
                 collisions.append(entity)
         return collisions
 
@@ -513,6 +493,99 @@ class Entity(object):
         return
 
 
+class Room(object):
+    """ Controller for the current room and its containing entities """
+
+    def __init__(self, world):
+        self.entities = []
+        self.world = world
+        self.sort_required = False
+
+    def __contains__(self, item):
+        return item in self.entities
+
+    def __iter__(self):
+        return self.entities.__iter__()
+
+    def enter(self):
+        """ Called after entering this room """
+        return
+
+    def exit(self):
+        """ Called before exiting this room """
+        return
+
+    def add(self, entity):
+        """ Add an entity to this Stage """
+        entity.container = self
+        self.entities.append(entity)
+        self.sort_required = True
+
+        return entity
+
+    def clear(self):
+        """ Remove all entities from this Stage """
+        del self.entities[:]
+
+    def get_group(self, *groups):
+        """
+        Iterate through all entities that are members of any of the specified
+        groups
+        """
+
+        for e in self.entities:
+            if e.member_of(*groups):
+                yield e
+
+    def get_name(self, name):
+        """ Get the first entity of a specific name """
+        for e in self.entities:
+            if e.name == name:
+                return e
+        return None
+
+    def remove(self, entity):
+        """ Remove this entity from the Stage """
+        try:
+            self.entities.remove(entity)
+            self.sort_required = True
+        except ValueError:
+            pass  # Do nothing
+
+    def remove_group(self, group):
+        """ Remove every entity that is a member of the specified group """
+        for entity in self.entities:
+            if entity.member_of(group):
+                self.entities.remove(entity)
+
+    def remove_name(self, entity_name):
+        """ Remove the first entity with this name """
+        for entity in self.entities:
+            if entity.name == entity_name:
+                self.entities.remove(entity)
+                break
+
+    def render(self):
+        """ Render all visible entities """
+        for entity in self.entities:
+            if entity.visible:
+                entity.render()
+
+    def update(self):
+        """ Update all active entities """
+        for entity in self.entities:
+            if entity.active:
+                entity.update()
+
+        if self.sort_required:
+            self.sort()
+            self.sort_required = False
+
+    def sort(self):
+        """ Sort entities based on entity.order """
+        self.entities.sort(key=lambda entity: entity.order)
+
+
 class State(object):
     """ Boilerplate state class for World """
 
@@ -541,7 +614,7 @@ class World(object):
         MainMenuWorld
         etc.
 
-    Worlds control Stages.
+    Worlds control Rooms.
 
     Worlds can switch between each other by invoking Engine.change_world()
 
@@ -552,7 +625,7 @@ class World(object):
     def __init__(self, name):
         self.name = name
         self.ui = None
-        self.stage = peachy.stage.Stage(self)
+        self.room = peachy.Room(self)
         self.state = None
         self.states = {}
 
@@ -561,14 +634,14 @@ class World(object):
         if self.state is None:
             self.state = state
 
-    def change_stage(self, stage):
-        """ Change the current stage and clear the previous stage """
+    def change_room(self, room):
+        """ Change the current room and clear the previous room """
 
-        if self.stage:
-            self.stage.clear()
-            self.stage.exit()
-        self.stage = stage
-        self.stage.enter()
+        if self.room:
+            self.room.clear()
+            self.room.exit()
+        self.room = room
+        self.room.enter()
 
     def change_state(self, state_name, *args):
         """ Change the current state """
@@ -601,8 +674,8 @@ class World(object):
     def shutdown(self):
         """ Shutdown procedure called during exit of Engine """
         try:
-            self.stage.clear()
-            self.stage = None
+            self.room.clear()
+            self.room = None
         except AttributeError:
             pass
 
@@ -626,7 +699,7 @@ class World(object):
             self.state.update()
         except AttributeError:
             if self.state is None:
-                self.stage.update()
+                self.room.update()
             else:
                 raise
 
@@ -643,6 +716,6 @@ class World(object):
             self.state.render()
         except AttributeError:
             if self.state is None:
-                self.stage.render()
+                self.room.render()
             else:
                 raise

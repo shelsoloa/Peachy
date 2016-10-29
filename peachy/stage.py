@@ -181,90 +181,6 @@ def render_layer(stage, layer):
         peachy.DEBUG('[ERROR] Layer could not be rendered ' + layer)
 
 
-class Stage(object):
-    """ Controller for the current stage and its containing entities """
-
-    def __init__(self, world):
-        self.entities = []
-        self.world = world
-
-    def __contains__(self, item):
-        return item in self.entities
-
-    def __iter__(self):
-        return self.entities.__iter__()
-
-    def enter(self):
-        """ Called after entering this stage """
-        return
-
-    def exit(self):
-        """ Called before exiting this stage """
-        return
-
-    def add(self, entity):
-        """ Add an entity to this Stage """
-        entity.container = self
-        self.entities.append(entity)
-        return entity
-
-    def clear(self):
-        """ Remove all entities from this Stage """
-        del self.entities[:]
-
-    def get_group(self, *groups):
-        """ Get all entities that are members of any of the specified groups """
-
-        ents = []
-        for e in self.entities:
-            if e.member_of(*groups):
-                ents.append(e)
-        return ents
-
-    def get_name(self, name):
-        """ Get the first entity of a specific name """
-        for e in self.entities:
-            if e.name == name:
-                return e
-        return None
-
-    def remove(self, entity):
-        """ Remove this entity from the Stage """
-        try:
-            self.entities.remove(entity)
-        except ValueError:
-            pass  # Do nothing
-
-    def remove_group(self, group):
-        """ Remove every entity that is a member of the specified group """
-        for entity in self.entities:
-            if entity.member_of(group):
-                self.entities.remove(entity)
-
-    def remove_name(self, entity_name):
-        """ Remove the first entity with this name """
-        for entity in self.entities:
-            if entity.name == entity_name:
-                self.entities.remove(entity)
-                break
-
-    def render(self):
-        """ Render all visible entities """
-        for entity in self.entities:
-            if entity.visible:
-                entity.render()
-
-    def update(self):
-        """ Update all active entities """
-        for entity in self.entities:
-            if entity.active:
-                entity.update()
-
-    def sort(self):
-        """ Sort entities based on entity.order """
-        self.entities.sort(key=lambda entity: entity.order)
-
-
 class StageData(object):
     """ Holds raw information about the current stage """
 
@@ -306,6 +222,7 @@ class StageData(object):
         def __init__(self):
             self.group = ''
             self.name = ''
+            self.type = ''
             self.x = 0
             self.y = 0
             self.w = 0
