@@ -49,6 +49,8 @@ class Engine(object):
         self._render_surface = None
         self._window_surface = None
 
+        self.resizable = resizable
+
         if fps <= 0:
             PC.fps = 60
 
@@ -141,8 +143,10 @@ class Engine(object):
         PC.title = title
         pygame.display.set_caption(title)
 
-    def fullscreen(self):
+    def toggle_fullscreen(self):
         """ Toggles fullscreen """
+        # TODO maintain aspect ratio
+
         screen = pygame.display.get_surface()
         caption = pygame.display.get_caption()
 
@@ -168,7 +172,6 @@ class Engine(object):
 
         self._window_surface = pygame.display.set_mode(
             self.window_size, flags ^ pygame.locals.FULLSCREEN, bits)
-        # pygame.display.set_mode(window_size, flags^FULLSCREEN, bits)
         self._render_surface = pygame.Surface(self.view_size)
 
         peachy.graphics.DEFAULT_CONTEXT = self._render_surface
@@ -182,18 +185,21 @@ class Engine(object):
         return
 
     def resize(self, width, height):
-        self.view_size = (width, height)
         screen = pygame.display.get_surface()
         flags = screen.get_flags()
         bits = screen.get_bitsize()
-        self.window_size = (width * PC.scale, height * PC.scale)
-        self._window_surface = pygame.display.set_mode(
-            self.window_size, flags, bits)
-        self._render_surface = pygame.Surface(self.view_size)
-        peachy.graphics.DEFAULT_CONTEXT = self._render_surface
-        peachy.graphics.set_context(self._render_surface)
-        PC.width = width
-        PC.height = height
+        
+        self.window_size = (width, height)
+        self._window_surface = \
+            pygame.display.set_mode(self.window_size, flags, bits)
+
+        if self.resizable:
+            self.view_size = (width, height)
+            self._render_surface = pygame.Surface(self.view_size)
+            peachy.graphics.DEFAULT_CONTEXT = self._render_surface
+            peachy.graphics.set_context(self._render_surface)
+            PC.width = width
+            PC.height = height
 
     def run(self):
         """ Start game loop (calls preload before running game loop) """
