@@ -25,13 +25,13 @@ class Nub(peachy.Entity):
         peachy.graphics.draw_entity_rect(self)
 
     def update(self):
-        if peachy.utils.Keys.down('left'):
+        if peachy.utils.Key.down('left'):
             self.x -= 1
-        if peachy.utils.Keys.down('right'):
+        if peachy.utils.Key.down('right'):
             self.x += 1
-        if peachy.utils.Keys.down('up'):
+        if peachy.utils.Key.down('up'):
             self.y -= 1
-        if peachy.utils.Keys.down('down'):
+        if peachy.utils.Key.down('down'):
             self.y += 1
 
 

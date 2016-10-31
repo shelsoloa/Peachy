@@ -1,5 +1,18 @@
-*.pyc
-peachy/*.pyc
-examples/snippet.py
-.idea
-.idea/*
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+
+# Distribution / packaging
+bin/
+build/
+develop-eggs/
+dist/
+eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+*.egg-info/
+.installed.cfg
+*.egg
