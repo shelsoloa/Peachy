@@ -7,8 +7,6 @@ class PC(object):
     This is the central access point for classes within the Peachy framework.
     This class contains references to the window, world, and entity room. Its
     values are set after startup.
-    This is the only class that can be accessed by submodules within the Peachy
-    framework.
     """
 
     fps = 0

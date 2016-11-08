@@ -10,8 +10,7 @@ from peachy.utils import Point
 FLIP_X = 0x01
 FLIP_Y = 0x02
 
-DEFAULT_CONTEXT = None  # A constant that holds the main render context
-
+__default_context = None
 __context = None
 __context_rect = None
 __translation = Point()
@@ -176,8 +175,8 @@ def reset_context():
     global __context_rect
     global __translation
 
-    __context = DEFAULT_CONTEXT
-    __context_rect = DEFAULT_CONTEXT.get_rect()
+    __context = __default_context
+    __context_rect = __default_context.get_rect()
     __translation.x = 0
     __translation.y = 0
 
@@ -213,6 +212,11 @@ def set_context(new_context):
 
     __context = new_context
     __context_rect = __context.get_rect()
+
+
+def set_default_context(default_context):
+    global __default_context
+    __default_context = default_context
 
 
 def set_font(new_font):
@@ -269,7 +273,7 @@ def splice(image, frame_width, frame_height, margin_x=0, margin_y=0):
 class SpriteMap(object):
 
     def __init__(self, source, frame_width, frame_height,
-                 margin_x=0, margin_y=0, origin_x=0, origin_y=0):
+                 margin=(0, 0), origin=(0, 0)):
         self.source = source
 
         self.name = ''
@@ -287,11 +291,11 @@ class SpriteMap(object):
         self.callback = None
 
         self.frames = splice(source, frame_width, frame_height,
-                             margin_x, margin_y)
+                             margin[0], margin[1])
         self.frame_width = frame_width
         self.frame_height = frame_height
 
-        self.origin = Point(origin_x, origin_y)
+        self.origin = Point(origin[0], origin[1])
 
     def add(self, name, frames, frame_rate=0, loops=False,
             callback=None, origin=None):

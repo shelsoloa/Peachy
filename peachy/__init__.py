@@ -1,4 +1,4 @@
-""" Make game development peachy """
+""" Peachy gamedev """
 
 import math
 import os
@@ -80,19 +80,21 @@ class Engine(object):
         pygame.display.set_caption(title)
         peachy.utils.Key.init()
         peachy.utils.Mouse.init()
+        pygame.event.set_allowed([pygame.locals.QUIT,
+                                  pygame.locals.VIDEORESIZE])
 
         # Initialize display (pygame)
         self.view_size = (PC.width, PC.height)
         self.window_size = (PC.width * scale, PC.height * scale)
 
-        flags = 0
+        flags = pygame.locals.DOUBLEBUF
         if resizable:
             flags += pygame.locals.RESIZABLE
 
         self._window_surface = pygame.display.set_mode(self.window_size, flags)
         self._render_surface = pygame.Surface(self.view_size)
 
-        peachy.graphics.DEFAULT_CONTEXT = self._render_surface
+        peachy.graphics.set_default_context(self._render_surface)
         peachy.graphics.set_context(self._render_surface)
 
         try:
