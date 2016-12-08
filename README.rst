@@ -1,8 +1,9 @@
 Peachy
 ------
 
-Peachy is a python game development framework. It is made up of multiple modules
-which are as follows:
+Peachy is a framework you can use to make 2d games in Python. It's free, open-source, and works on Windows, Linux, and possibly OSX (untested).
+
+Peachy is made up of the following modules:
 
 * peachy - The core modules that contains the Engine, World, and Entity classes among others
 * peachy.audio - Contains sound classes (still under heavy maintenance)
@@ -13,6 +14,7 @@ which are as follows:
 * peachy.ui - Generic user interface template
 * peachy.utils - Utility functions for camera, user input handling, etc
 
+Peachy is licensed under the MIT license.
 
 Links
 -----

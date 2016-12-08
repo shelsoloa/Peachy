@@ -196,7 +196,7 @@ class Key(object):
     @staticmethod
     def down(key):
         code = Key._get_key_code(key)
-        if code != -1:
+        if code is not None:
             return Key.current_state[code]
         return False
 
@@ -209,7 +209,7 @@ class Key(object):
             return False
         else:
             code = Key._get_key_code(key)
-            if code != -1:
+            if code is not None:
                 return Key.current_state[code] and not \
                     Key.previous_state[code]
             return False
@@ -217,7 +217,7 @@ class Key(object):
     @staticmethod
     def released(key):
         code = Key._get_key_code(key)
-        if code != -1:
+        if code is not None:
             return not Key.current_state[code] and Key.previous_state[code]
         return False
 
@@ -361,7 +361,7 @@ class Key(object):
         elif key == 'z':
             return pygame.locals.K_z
         else:
-            return -1
+            return None
 
 
 class TextCapture(object):

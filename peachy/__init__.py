@@ -498,8 +498,8 @@ class Entity(object):
 
     def distance_from(self, entity):
         """ Get the abs distance between the center of two entities """
-        sx, sy = self.center()
-        ex, ey = entity.center()
+        sx, sy = self.center
+        ex, ey = entity.center
         a = abs(sx - ex)
         b = abs(sy - ey)
         return math.sqrt(a**2 + b**2)
