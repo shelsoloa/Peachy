@@ -10,43 +10,45 @@ from peachy.utils import Point
 FLIP_X = 0x01
 FLIP_Y = 0x02
 
-__default_context = None
-__context = None
-__context_rect = None
-__translation = Point()
+_default_context = None
+_context = None
+_context_rect = None
+_context_stack = []
 
-__color = pygame.Color(0, 0, 0)
-__font = None
+_translation = Point()
+
+_color = pygame.Color(0, 0, 0)
+_font = None
 
 
 """ Drawing """
 
 
 def draw(image, x, y, args=0):
-    x -= __translation.x
-    y -= __translation.y
+    x -= _translation.x
+    y -= _translation.y
 
     bounds = image.get_rect().move(x, y)
 
-    if bounds.colliderect(__context_rect):
+    if bounds.colliderect(_context_rect):
         if args & FLIP_X:
             image = pygame.transform.flip(image, True, False)
         if args & FLIP_Y:
             image = pygame.transform.flip(image, False, True)
 
-        __context.blit(image, (x, y))
+        _context.blit(image, (x, y))
 
 
 def draw_arc(x, y, r, start, end):
     alpha = False
     try:
-        alpha = __color[3] < 255
+        alpha = _color[3] < 255
     except IndexError:
         alpha = False
 
     if not alpha:
-        x = int(x - __translation.x)
-        y = int(y - __translation.y)
+        x = int(x - _translation.x)
+        y = int(y - _translation.y)
 
     points = []
     points.append((x, y))
@@ -59,7 +61,7 @@ def draw_arc(x, y, r, start, end):
     if alpha:
         draw_polygon(points)
     else:
-        pygame.draw.polygon(__context, __color, points)
+        pygame.draw.polygon(_context, _color, points)
 
 
 def draw_entity_rect(entity):
@@ -67,59 +69,59 @@ def draw_entity_rect(entity):
 
 
 def draw_circle(x, y, r):
-    x = int(x - __translation.x + r)
-    y = int(y - __translation.y + r)
+    x = int(x - _translation.x + r)
+    y = int(y - _translation.y + r)
 
     try:
-        assert __color[3] < 255
+        assert _color[3] < 255
         temp = Surface((r * 2, r * 2), pygame.SRCALPHA)
-        pygame.draw.circle(temp, __color, (r, r), r)
-        __context.blit(temp, (x - r, y - r))
+        pygame.draw.circle(temp, _color, (r, r), r)
+        _context.blit(temp, (x - r, y - r))
     except (AssertionError, IndexError):
-        pygame.draw.circle(__context, __color, (x, y), r)
+        pygame.draw.circle(_context, _color, (x, y), r)
 
 
 def draw_line(x1, y1, x2, y2):
-    x1 -= __translation.x
-    x2 -= __translation.x
-    y1 -= __translation.y
-    y2 -= __translation.y
+    x1 -= _translation.x
+    x2 -= _translation.x
+    y1 -= _translation.y
+    y2 -= _translation.y
 
-    pygame.draw.line(__context, __color, (x1, y1), (x2, y2))
+    pygame.draw.line(_context, _color, (x1, y1), (x2, y2))
 
 
 def draw_polygon(points, aa=False):
     if aa:
-        gfxdraw.filled_polygon(__context, points, __color)
-        gfxdraw.aapolygon(__context, points, __color)
+        gfxdraw.filled_polygon(_context, points, _color)
+        gfxdraw.aapolygon(_context, points, _color)
     else:
-        temp = Surface((__context.get_width(), __context.get_height()),
+        temp = Surface((_context.get_width(), _context.get_height()),
                        pygame.SRCALPHA)
-        pygame.draw.polygon(temp, __color, points)
-        __context.blit(temp, (-__translation.x, -__translation.y))
+        pygame.draw.polygon(temp, _color, points)
+        _context.blit(temp, (-_translation.x, -_translation.y))
 
 
 def draw_rect(x, y, width, height, thickness=0):
     """ Draw a rectangle """
-    x -= __translation.x
-    y -= __translation.y
+    x -= _translation.x
+    y -= _translation.y
 
     try:
-        assert __color[3] < 255
+        assert _color[3] < 255
         temp = Surface((width, height), pygame.SRCALPHA)
         if thickness <= 0:
-            temp.fill(__color)
+            temp.fill(_color)
         else:
-            pygame.draw.rect(temp, __color, (0, 0, width, height), thickness)
-        __context.blit(temp, (x, y))
+            pygame.draw.rect(temp, _color, (0, 0, width, height), thickness)
+        _context.blit(temp, (x, y))
     except (AssertionError, IndexError):
-        pygame.draw.rect(__context, __color, (x, y, width, height), thickness)
+        pygame.draw.rect(_context, _color, (x, y, width, height), thickness)
 
 
 def draw_rounded_rect(x, y, width, height, radius):
     """ Draw a rectangle with rounded corners """
     rect = pygame.Rect(x, y, width, height)
-    color = pygame.Color(*__color)
+    color = pygame.Color(*_color)
     alpha = color.a
     color.a = 0
     pos = rect.topleft
@@ -145,21 +147,21 @@ def draw_rounded_rect(x, y, width, height, radius):
     rectangle.fill(color, special_flags=pygame.BLEND_RGBA_MAX)
     rectangle.fill((255, 255, 255, alpha), special_flags=pygame.BLEND_RGBA_MIN)
 
-    __context.blit(rectangle, pos)
+    _context.blit(rectangle, pos)
 
 
 def draw_text(text, x, y, aa=True, center=False, font=None):
     if font:
-        text_surface, text_rect = font.render(text, __color)
+        text_surface, text_rect = font.render(text, _color)
     else:
-        text_surface, text_rect = __font.render(text, __color)
-    text_rect.x = x - __translation.x
-    text_rect.y = y - __translation.y
+        text_surface, text_rect = _font.render(text, _color)
+    text_rect.x = x - _translation.x
+    text_rect.y = y - _translation.y
 
     if center:
-        text_rect.centerx = __context_rect.centerx
+        text_rect.centerx = _context_rect.centerx
 
-    __context.blit(text_surface, text_rect)
+    _context.blit(text_surface, text_rect)
 
 
 """ State Modification """
@@ -167,18 +169,55 @@ def draw_text(text, x, y, aa=True, center=False, font=None):
 
 
 def font():
-    return __font
+    return _font
+
+
+def pop_context():
+    """ Revert to the previous graphics context """
+    global _context_stack
+
+    # retrieve the last context stashed
+    # Note:
+    try:
+        set_context(_context_stack.pop())
+    except IndexError:
+        set_context(_default_context)
+
+
+def push_context(context_surface):
+    """
+    Set a Surface as the current graphics context.
+
+    Undo this operation by using pop_context() or reset_context()
+    """
+
+    # Context's are stashed inside the context_stack only when a new context has
+    # been pushed onto the stack. IE. The current context is not stored in
+    # context_stack.
+
+    global _context_stack
+
+    # stash previous context inside context_stack
+    _context_stack.append(_context)
+
+    # set current context
+    set_context(context_surface)
 
 
 def reset_context():
-    global __context
-    global __context_rect
-    global __translation
+    """
+    Reset to the default context.
+    Clears context stack and translations.
+    """
 
-    __context = __default_context
-    __context_rect = __default_context.get_rect()
-    __translation.x = 0
-    __translation.y = 0
+    global _context_stack
+    global _translation
+
+    set_context(_default_context)
+    _context_stack.clear()
+
+    _translation.x = 0
+    _translation.y = 0
 
 
 def rgb_to_hex(color):
@@ -186,14 +225,14 @@ def rgb_to_hex(color):
 
 
 def set_color(r, g, b, a=255):
-    global __color
+    global _color
 
     if (0 <= r <= 255) and \
        (0 <= g <= 255) and \
        (0 <= b <= 255) and \
        (0 <= a <= 255):
         # TODO fix alpha
-        __color = pygame.Color(r, g, b, a)
+        _color = pygame.Color(r, g, b, a)
 
 
 def set_color_hex(val):
@@ -201,38 +240,38 @@ def set_color_hex(val):
     val = val.lstrip('#')
     lv = len(val)
     # Hell if I know how this works... Thanks Stack Overflow
-    __color = tuple(int(val[i:i + lv // 3], 16) for i in range(0, lv, lv // 3))
+    _color = tuple(int(val[i:i + lv // 3], 16) for i in range(0, lv, lv // 3))
 
-    set_color(*__color)
+    set_color(*_color)
 
 
 def set_context(new_context):
-    global __context
-    global __context_rect
+    global _context
+    global _context_rect
 
-    __context = new_context
-    __context_rect = __context.get_rect()
+    _context = new_context
+    _context_rect = new_context.get_rect()
 
 
 def set_default_context(default_context):
-    global __default_context
-    __default_context = default_context
+    global _default_context
+    _default_context = default_context
 
 
 def set_font(new_font):
-    global __font
-    __font = new_font
+    global _font
+    _font = new_font
 
 
 def translate(x, y, absolute=True):
-    global __translation
+    global _translation
 
     if absolute:
-        __translation.x = x
-        __translation.y = y
+        _translation.x = x
+        _translation.y = y
     else:
-        __translation.x += x
-        __translation.y += y
+        _translation.x += x
+        _translation.y += y
 
 
 """ Image Manip """
