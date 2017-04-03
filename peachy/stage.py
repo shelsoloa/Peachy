@@ -1,13 +1,11 @@
 import os
-
 import peachy
-from peachy.fs import open_xml
 
 
 def load_tiled_tmx(path):
     """ Creates a new StageData object from a tiled .tmx file """
 
-    xml = open_xml(path)
+    xml = peachy.fs.open_xml(path)
     if xml is None:
         raise IOError('stage "{0}" not found'.format(path))
 
@@ -41,7 +39,7 @@ def load_tiled_tmx(path):
         # parse .TSX
         tsx_source = tileset_raw.getAttribute('source')
         if tsx_source:
-            tsx_xml = open_xml(os.path.join(asset_path, tsx_source))
+            tsx_xml = peachy.fs.open_xml(os.path.join(asset_path, tsx_source))
             if tsx_xml is None:
                 raise IOError("[ERROR] Could not load tileset: " + tsx_source)
             else:

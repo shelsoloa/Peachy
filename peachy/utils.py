@@ -18,6 +18,11 @@ class Point(object):
 
 
 class Counter(object):
+
+    # Something about this class REALLY annoys me. Could be the implementation,
+    # could be the functionality. All I know, is that it's too annoying to use
+    # but too useful to remove.
+
     def __init__(self, start, target, repeat=False, step=1):
         self.start = start
         self.target = target
@@ -42,7 +47,7 @@ class Counter(object):
             self.current += self.step
             if self.current >= self.target:
                 if self.repeat:
-                    self.current = 0
+                    self.current = self.start
                     return True
                 else:
                     return True

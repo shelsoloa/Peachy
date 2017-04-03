@@ -3,7 +3,9 @@ Peachy
 
 Peachy is a framework you can use to make 2d games in Python. It's free, open-source, and works on Windows, Linux, and possibly OSX (untested).
 
-Peachy is made up of the following modules:
+
+Features
+________
 
 * peachy - The core modules that contains the Engine, World, and Entity classes among others
 * peachy.audio - Contains sound classes (still under heavy maintenance)
@@ -14,10 +16,16 @@ Peachy is made up of the following modules:
 * peachy.ui - Generic user interface template
 * peachy.utils - Utility functions for camera, user input handling, etc
 
-Peachy is licensed under the MIT license.
 
-Links
+Installation
+_____
+Requirements
+ - Python 3
+ - Pygame (check out resources for compatible versions)
+
+Resources
 -----
 Repository ~ https://github.com/shellbotx/peachy
-Official Tutorial ~ coming soon
-Shambled (completed tutorial) ~ https://github.com/shellbotx/shambled
+Tutorial ~ coming soon
+
+Peachy is licensed under the MIT license.
