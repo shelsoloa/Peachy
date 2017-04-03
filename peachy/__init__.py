@@ -14,6 +14,7 @@ import peachy.graphics
 import peachy.stage
 import peachy.utils
 from peachy.PC import PC
+from peachy.utils import list_wrap
 
 
 def DEBUG(*objs):
@@ -434,7 +435,6 @@ class Room(object):
         entity.container = self
         self.entities.append(entity)
         self.sort_required = True
-
         return entity
 
     def clear(self):
@@ -467,11 +467,7 @@ class Room(object):
 
     def remove_group(self, group):
         """ Remove every entity that is a member of the specified group """
-        # Create reference list to iterate over. This prevents errors from
-        # occuring when operations are performed on the list during iteration.
-        entities = list(self.entities)
-
-        for entity in entities:
+        for entity in list_wrap(self.entities):
             if entity.member_of(group):
                 self.remove(entity)
 
@@ -484,21 +480,13 @@ class Room(object):
 
     def render(self):
         """ Render all visible entities """
-        # Create reference list to iterate over. This prevents errors from
-        # occuring when operations are performed on the list during iteration.
-        entities = list(self.entities)
-
-        for entity in entities:
+        for entity in list_wrap(self.entities):
             if entity.visible:
                 entity.render()
 
     def update(self):
         """ Update all active entities """
-        # Create reference list to iterate over. This prevents errors from
-        # occuring when operations are performed on the list during iteration.
-        entities = list(self.entities)
-
-        for entity in entities:
+        for entity in list_wrap(self.entities):
             if entity.active:
                 entity.update()
 
