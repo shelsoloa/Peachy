@@ -5,7 +5,7 @@ from pygame import Surface
 from pygame import gfxdraw
 from pygame.freetype import Font
 
-from peachy.utils import Point
+from peachy.geo import Point
 
 FLIP_X = 0x01
 FLIP_Y = 0x02

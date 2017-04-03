@@ -2,21 +2,6 @@ import pygame
 import peachy
 
 
-class Point(object):
-    def __init__(self, x=0, y=0):
-        self.x = x
-        self.y = y
-
-    def __str__(self):
-        return "({0}, {1})".format(self.x, self.y)
-
-    def __eq__(self, other):
-        if isinstance(other, self.__class__):
-            return self.__dict__ == other.__dict__
-        if isinstance(other, tuple):
-            return self.x == other[0] and self.y == other[1]
-
-
 class Counter(object):
 
     # Something about this class REALLY annoys me. Could be the implementation,

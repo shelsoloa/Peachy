@@ -1,6 +1,5 @@
 """ Peachy gamedev """
 
-import math
 import os
 import sys
 
@@ -290,19 +289,18 @@ class Engine(object):
         self.world.update()
 
 
-class Entity(object):
+class Entity(peachy.geo.Rect):
     """
-    Interactive game object
+    Interactive game object.
+
+    Inherits from Rect which handles basic collision detection
     """
 
     def __init__(self, x=0, y=0):
+        super().__init__(x, y, 0, 0)  # Initializes x, y, width, height
+
         self.group = ''           # Every entity belongs to a group
         self.name = ''            # Unique entities have a name (1/room)
-
-        self.x = x                # x coordinate
-        self.y = y                # y coordinate
-        self.width = 0            # width (collision detection)
-        self.height = 0           # height (collision detection)
 
         self.velocity_x = 0       # x-axis velocity
         self.velocity_y = 0       # y-axis velocity
@@ -325,35 +323,6 @@ class Entity(object):
     def group(self, groups):
         self.__groups = groups.split()
 
-    @property
-    def bottom(self):
-        return self.y + self.height
-
-    @bottom.setter
-    def bottom(self, bottom):
-        self.y = bottom - self.height
-
-    @property
-    def center(self):
-        """ Return center coordinates of entity in a tuple """
-        return (self.x + self.width / 2, self.y + self.height / 2)
-
-    @property
-    def center_x(self):
-        return self.x + self.width / 2
-
-    @center_x.setter
-    def center_x(self, cx):
-        self.x = cx - self.width / 2
-
-    @property
-    def center_y(self):
-        return self.y + self.height / 2
-
-    @center_y.setter
-    def center_y(self, cy):
-        self.y = cy - self.height / 2
-
     def destroy(self):
         """
         Remove entity from parent container and set as inactive. Note that
@@ -363,22 +332,6 @@ class Entity(object):
         self.container.remove(self)
         self.active = False
         self.world = None
-
-    def collides(self, e, x, y):
-        """ Check if 'self' is colliding with specified entity 'e' """
-
-        right_a = x + self.width
-        bottom_a = y + self.height
-        right_b = e.x + e.width
-        bottom_b = e.y + e.height
-
-        if x < right_b and \
-           right_a > e.x and \
-           y < bottom_b and \
-           bottom_a > e.y:
-            return True
-        else:
-            return False
 
     def collides_group(self, group, x=None, y=None):
         """
@@ -425,84 +378,6 @@ class Entity(object):
             return entity
         return None
 
-    def collides_point(self, point, x=None, y=None):
-        """ Check if 'self' is colliding with a specific point """
-        if x is None or y is None:
-            x = self.x
-            y = self.y
-
-        px, py = point
-        if x <= px <= x + self.width and y <= py <= y + self.height:
-            return True
-        else:
-            return False
-
-    def collides_circle(self, circle, x=None, y=None):
-        """
-        Check if 'self' is colliding with a circle
-        circle = tuple (x, y, radius)
-
-        Can provide custom x/y or leave blank for self.x/self.y.
-        """
-        if x is None or y is None:
-            x = self.x
-            y = self.y
-
-        circle_x, circle_y, radius = circle
-        circle_x += radius
-        circle_y += radius
-
-        rx = self.x + self.width / 2
-        ry = self.y + self.height / 2
-
-        dist_x = abs(circle_x - rx)
-        dist_y = abs(circle_y - ry)
-        half_width = self.width / 2
-        half_height = self.height / 2
-
-        if dist_x > (half_width + radius):
-            return False
-        if dist_y > (half_height + radius):
-            return False
-
-        if dist_x <= half_width:
-            return True
-        if dist_y <= half_height:
-            return True
-
-        corner_distance = (dist_x - half_width)**2 + (dist_y - half_height)**2
-
-        return corner_distance <= (radius**2)
-
-    def collides_rect(self, rect, x=None, y=None):
-        """
-        Check if 'self' is colliding with a rectangle.
-        rect = tuple (x, y, width, height)
-
-        Can provide custom x/y or leave blank for self.x/self.y
-        """
-        if x is None or y is None:
-            x = self.x
-            y = self.y
-
-        rx, ry, rwidth, rheight = rect
-
-        left_a = x
-        right_a = x + self.width
-        top_a = y
-        bottom_a = y + self.height
-
-        left_b = rx
-        right_b = rx + rwidth
-        top_b = ry
-        bottom_b = ry + rheight
-
-        if (bottom_a <= top_b or top_a >= bottom_b or
-                right_a <= left_b or left_a >= right_b):
-            return False
-        else:
-            return True
-
     def collides_solid(self, x=None, y=None):
         """ Check if 'self' is colliding with any entity flagged as 'solid' """
         if x is None or y is None:
@@ -515,20 +390,6 @@ class Entity(object):
                self.collides(entity, x, y):
                 collisions.append(entity)
         return collisions
-
-    def distance_from(self, entity):
-        """ Get the abs distance between the center of two entities """
-        sx, sy = self.center
-        ex, ey = entity.center
-        a = abs(sx - ex)
-        b = abs(sy - ey)
-        return math.sqrt(a**2 + b**2)
-
-    def distance_from_point(self, px, py):
-        """ Get the abs distance between the center of 'self' and any point """
-        a = abs(self.x - px)
-        b = abs(self.y - py)
-        return math.sqrt(a**2 + b**2)
 
     def member_of(self, *groups):
         """ Check is this entity is a member of any of the groups specified """

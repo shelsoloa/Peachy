@@ -138,7 +138,7 @@ def load_tiled_tmx(path):
                 points_raw = polygon[0].getAttribute('points').split()
                 for raw_point in points_raw:
                     raw_point = raw_point.split(',')
-                    p = peachy.utils.Point(int(raw_point[0]), int(raw_point[1]))
+                    p = peachy.geo.Point(int(raw_point[0]), int(raw_point[1]))
                     obj.polygon_points.append(p)
                 obj.is_polygon = True
 
