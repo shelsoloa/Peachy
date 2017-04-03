@@ -329,7 +329,7 @@ class SpriteMap(object):
         self.current_animation = None
         self.current_frame = -1
         self.time_remaining = 0
-
+        self.reversing = False
         self.callback = None
 
         self.frames = splice(source, frame_width, frame_height,
@@ -339,8 +339,8 @@ class SpriteMap(object):
 
         self.origin = Point(origin[0], origin[1])
 
-    def add(self, name, frames, frame_rate=0, loops=False,
-            callback=None, origin=None):
+    def add(self, name, frames, frame_rate=0, loops=False, pingpongs=False,
+            origin=None, callback=None):
         if origin is None and self.origin is not None:
             origin = (self.origin.x, self.origin.y)
 
@@ -348,6 +348,7 @@ class SpriteMap(object):
             "frames": frames,
             "frame_rate": frame_rate,
             "loops": loops,
+            "pingpongs": pingpongs,
             "callback": callback,
             "origin": origin
         }
@@ -356,15 +357,17 @@ class SpriteMap(object):
     def pause(self):
         self.paused = True
 
-    """
-    Will play the animation specified by anim_name.
-    flip_x and flip_y will flip along the x or y axis respectively
-    restart will start the animation for the very beginning
-    """
     def play(self, anim_name, flip_x=False, flip_y=False, restart=False):
+        """
+        Play the animation specified by anim_name.
+        flip along x or y axis by specifying flip_x and flip_y
+        restart will start the animation for the very beginning
+        """
         if anim_name in self.animations:
-            if self.name != anim_name or self.flipped_x != flip_x or \
-               self.flipped_y != flip_y or restart:
+            if self.name != anim_name or \
+               self.flipped_x != flip_x or \
+               self.flipped_y != flip_y or \
+               restart:
                 self.name = anim_name
                 self.flipped_x = flip_x
                 self.flipped_y = flip_y
@@ -372,6 +375,7 @@ class SpriteMap(object):
 
                 self.current_animation = self.animations[anim_name]
                 self.current_frame = 0
+                self.reversing = False
                 self.time_remaining = self.current_animation['frame_rate']
                 self.callback = self.current_animation['callback']
 
@@ -400,16 +404,33 @@ class SpriteMap(object):
             self.time_remaining -= 1
 
             if self.time_remaining <= 0:
-                self.current_frame += 1
 
-                if self.current_frame >= len(self.current_animation['frames']):
+                animation_complete = False
+                if self.reversing:
+                    self.current_frame -= 1
+                    if self.current_frame < 1:
+                        animation_complete = True
+                else:
+                    self.current_frame += 1
+                    if self.current_frame >= \
+                       len(self.current_animation['frames']):
+                        animation_complete = True
+
+                if animation_complete:
 
                     # Loop or not
 
-                    if self.current_animation['loops']:
+                    if not self.reversing and \
+                       self.current_animation['pingpongs']:
+                        self.current_frame -= 2
+                        self.reversing = True
+                        self.time_remaining = \
+                            self.current_animation['frame_rate']
+                    elif self.current_animation['loops']:
                         self.current_frame = 0
                         self.time_remaining = \
                             self.current_animation['frame_rate']
+                        self.reversing = False
                     else:
                         self.current_frame -= 1
                         self.time_remaining = 0
