@@ -10,7 +10,6 @@ class PC(object):
     """
 
     fps = 0
-    scale = -1
     title = ''
 
     background_color = (0, 0, 0)

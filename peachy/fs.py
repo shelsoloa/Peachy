@@ -14,7 +14,6 @@ def resource_loader(f):
     def inner(asset_name, path, *args, **kwargs):
         global resources
         if asset_name in resources:
-            peachy.DEBUG("Resource ({0}) is already loaded".format(asset_name))
             return resources[asset_name]
 
         try:

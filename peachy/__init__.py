@@ -22,10 +22,6 @@ def DEBUG(*objs):
         print("[DEBUG]", *objs, file=sys.stderr)
 
 
-def get_version():
-    return '0.0.3'
-
-
 class Engine(object):
     """
     Engine is the main controller for Peachy and controls priority aspects of
@@ -37,12 +33,12 @@ class Engine(object):
                  resizable=False):
         self.worlds = {}
         self.world = None
+        self.__title = title
+        self.__scale = scale
 
         PC.engine = self
         PC.width = view_size[0]
         PC.height = view_size[1]
-        PC.title = title
-        PC.scale = scale
         PC.fps = fps
         PC.debug = debug
 
@@ -55,9 +51,8 @@ class Engine(object):
             PC.fps = 60
 
         # Initialize pygame
-        os.environ['SDL_VIDEO_CENTERED'] = "1"
-
         try:
+            os.environ['SDL_VIDEO_CENTERED'] = '1'
             pygame.mixer.pre_init(44100, -16, 8, 512)
             pygame.display.init()
             pygame.freetype.init()
@@ -67,7 +62,7 @@ class Engine(object):
             # pygame.joystick.init()
         except Exception:
             if pygame.display.get_init() is None:
-                print("[ERROR] Could not initialize pygame display. Abort")
+                print("[ERROR] Could not initialize pygame display. Abort!")
             elif pygame.font.get_init() is None:
                 print("[ERROR] Could not initialize pygame font. Abort!")
             elif pygame.freetype.get_init() is None:
@@ -101,8 +96,27 @@ class Engine(object):
             peachy.graphics.__font = peachy.graphics.Font(
                 'peachy/fonts/ProggyClean.ttf', 16)
         except IOError:
-            DEBUG("Debug font not found")
+            DEBUG("Default font not found")
             # TODO exit
+
+    @property
+    def title(self):
+        return self.__title
+
+    @title.setter
+    def title(self, t):
+        self.__title = t
+        pygame.display.set_caption(t)
+
+    @property
+    def scale(self):
+        return self.__scale
+
+    @scale.setter
+    def scale(self, s):
+        self.__scale = s
+        self.window_size = (PC.width * s, PC.height * s)
+        self._window_surface = pygame.display.set_mode(self.window_size)
 
     def add_world(self, world, name=''):
         """
@@ -143,10 +157,6 @@ class Engine(object):
     def get_world(self, world_name):
         return self.worlds.get(world_name)
 
-    def set_title(self, title):
-        PC.title = title
-        pygame.display.set_caption(title)
-
     def toggle_fullscreen(self):
         """ Toggles fullscreen """
         # TODO maintain aspect ratio
@@ -178,13 +188,13 @@ class Engine(object):
             self.window_size, flags ^ pygame.locals.FULLSCREEN, bits)
         self._render_surface = pygame.Surface(self.view_size)
 
-        peachy.graphics.DEFAULT_CONTEXT = self._render_surface
+        peachy.graphics.set_default_context(self._render_surface)
         peachy.graphics.set_context(self._render_surface)
 
     def preload(self):
         """
         Called at the beginning of run() before entering the main game loop.
-        Used to load any startup resources or perform required operations.
+        Use to perform startup operations.
         """
         return
 
@@ -200,7 +210,7 @@ class Engine(object):
         if self.resizable:
             self.view_size = (width, height)
             self._render_surface = pygame.Surface(self.view_size)
-            peachy.graphics.DEFAULT_CONTEXT = self._render_surface
+            peachy.graphics.set_default_context(self._render_surface)
             peachy.graphics.set_context(self._render_surface)
             PC.width = width
             PC.height = height
@@ -233,10 +243,10 @@ class Engine(object):
                 peachy.utils.Key._poll()
 
                 # Update
-                self.update()
+                self.__update()
 
                 # Render - Draw World
-                self.render()
+                self.__render()
 
                 # Render - Transformations
                 # TODO speed up scaling somehow
@@ -250,7 +260,8 @@ class Engine(object):
                 game_timer.tick(PC.fps)
                 if PC.debug:
                     fps = round(game_timer.get_fps())
-                    pygame.display.set_caption(PC.title + ' {' + str(fps) + '}')
+                    pygame.display.set_caption(self.__title +
+                                               ' {' + str(fps) + '}')
 
             self.shutdown()  # Shutdown all peachy modules
             pygame.event.get()  # Throw away any pending events
@@ -260,11 +271,11 @@ class Engine(object):
         except:
             import traceback
             print("[ERROR] Unexpected error. {0} shutting down."
-                  .format(PC.title))
+                  .format(self.__title))
             traceback.print_exc()
         sys.exit()
 
-    def render(self):
+    def __render(self):
         self._render_surface.fill(PC.background_color)
         self.world.render()
 
@@ -274,7 +285,7 @@ class Engine(object):
         for _, world in self.worlds.items():
             world.shutdown()
 
-    def update(self):
+    def __update(self):
         self.world.update()
 
 
