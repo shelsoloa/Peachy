@@ -10,6 +10,7 @@ import pygame.locals
 # Import all submodules
 import peachy.audio
 import peachy.fs
+import peachy.geo
 import peachy.graphics
 import peachy.stage
 import peachy.utils
@@ -325,6 +326,14 @@ class Entity(object):
         self.__groups = groups.split()
 
     @property
+    def bottom(self):
+        return self.y + self.height
+
+    @bottom.setter
+    def bottom(self, bottom):
+        self.y = bottom - self.height
+
+    @property
     def center(self):
         """ Return center coordinates of entity in a tuple """
         return (self.x + self.width / 2, self.y + self.height / 2)
@@ -576,7 +585,6 @@ class Room(object):
         Iterate through all entities that are members of any of the specified
         groups
         """
-
         for e in self.entities:
             if e.member_of(*groups):
                 yield e
@@ -598,26 +606,38 @@ class Room(object):
 
     def remove_group(self, group):
         """ Remove every entity that is a member of the specified group """
-        for entity in self.entities:
+        # Create reference list to iterate over. This prevents errors from
+        # occuring when operations are performed on the list during iteration.
+        entities = list(self.entities)
+
+        for entity in entities:
             if entity.member_of(group):
-                self.entities.remove(entity)
+                self.remove(entity)
 
     def remove_name(self, entity_name):
         """ Remove the first entity with this name """
         for entity in self.entities:
             if entity.name == entity_name:
-                self.entities.remove(entity)
+                self.remove(entity)
                 break
 
     def render(self):
         """ Render all visible entities """
-        for entity in self.entities:
+        # Create reference list to iterate over. This prevents errors from
+        # occuring when operations are performed on the list during iteration.
+        entities = list(self.entities)
+
+        for entity in entities:
             if entity.visible:
                 entity.render()
 
     def update(self):
         """ Update all active entities """
-        for entity in self.entities:
+        # Create reference list to iterate over. This prevents errors from
+        # occuring when operations are performed on the list during iteration.
+        entities = list(self.entities)
+
+        for entity in entities:
             if entity.active:
                 entity.update()
 
@@ -628,26 +648,6 @@ class Room(object):
     def sort(self):
         """ Sort entities based on entity.order """
         self.entities.sort(key=lambda entity: entity.order)
-
-
-class State(object):
-    """ Boilerplate state class for World """
-
-    def __init__(self, name, world):
-        self.name = name
-        self.world = world
-
-    def enter(self, previous_state, *args):
-        return
-
-    def exit(self, next_state, *args):
-        return
-
-    def render(self):
-        return
-
-    def update(self):
-        return
 
 
 class World(object):
@@ -763,3 +763,23 @@ class World(object):
                 self.room.render()
             else:
                 raise
+
+
+class WorldState(object):
+    """ Boilerplate state class for World """
+
+    def __init__(self, name, world):
+        self.name = name
+        self.world = world
+
+    def enter(self, previous_state, *args):
+        return
+
+    def exit(self, next_state, *args):
+        return
+
+    def render(self):
+        return
+
+    def update(self):
+        return
