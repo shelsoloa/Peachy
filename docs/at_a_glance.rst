@@ -1,14 +1,7 @@
 Peachy
 ------
-game development done peachy keen
 
-
-What & Why?
------------
-Peachy is a python game development framework made to help develop games using
-python3. Peachy was created to fill a void, somewhere in between coding using a
-library and giving up control to a bloated engine. Peachy is a framework, like
-Flask, or FlashPunk (both of which were influences in Peachy's development).
+Peachy is a 2D game framework. It's free, open-source, and works on Windows and Linux (and probably OSX).
 
 
 Features
@@ -37,20 +30,6 @@ ________
     * Only supports tiled, but planning to add OGMO and more generic methods
 * peachy.ui - Generic user interface template
 * peachy.utils - Utility functions for camera, input, etc
-
-
-Building Docs
--------------
-Peachy is documented using Google Style Python Docstrings. Docs are held
-within /docs.
-
-You can check out the docs over at:
-Or build the docs yourself using Sphinx(link). They're in the /docs directory.
-
-
-Running Tests
--------------
-Just use pytest
 
 
 Installation
