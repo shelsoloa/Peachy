@@ -1,4 +1,6 @@
 import peachy
+import peachy.graphics
+import peachy.utils
 
 
 def _iter_widget(widget):
@@ -32,7 +34,7 @@ class UICanvas(object):
     A generator that recurses through every widget including child widgets.
     Returns widgets in FIFO order and children in LIFO
 
-    #TODO change children to also return FIFO
+    TODO change children to also return FIFO
     """
     def all_widgets(self):
         # Iteration is reversed because widgets are processed FIFO
@@ -120,7 +122,7 @@ class Widget(object):
         self.parent = None
         self.children = []
 
-        self.focusable = True
+        self.can_focus = True
 
     @property
     def focused(self):
@@ -128,7 +130,7 @@ class Widget(object):
 
     @focused.setter
     def focused(self, value):
-        if self.focusable:
+        if self.can_focus:
             self._focus = value
             if value and self.parent is not None:
                 self.parent.focused = True
@@ -160,7 +162,7 @@ class Widget(object):
         self.y = y
 
     def normalize(self, x, y):
-        return (x - self.x, y - self.y)
+        return x - self.x, y - self.y
 
     def render(self):
         return
@@ -174,7 +176,7 @@ class Widget(object):
         widget.parent = None
         if self.focused_widget == widget:
             self.focused_widget = self
-        self.widgets.remove(widget)
+        self.children.remove(widget)
 
     def resize(self):
         for widget in self.children:

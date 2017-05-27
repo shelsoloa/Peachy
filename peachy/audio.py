@@ -1,13 +1,17 @@
-# TODO redo module
+"""Peachy audio module
+
+This module is for classes and functions related to Audio.
+
+Note:
+    There's not really anything here yet. In fact, what is here is a mess and
+    the weakest aspect of Peachy.
+"""
+
 import pygame
 from pygame.mixer import Sound
 
-# TODO this entire module is a mess and the weakest aspect of Peachy.
-# A lot of work can be done here.
-
 
 class Music(object):
-
     def __init__(self, source):
         self.source = source
         self.loaded = False
@@ -51,7 +55,6 @@ class Music(object):
 
 class SoundHandler(Sound):
     """ Wrapper for Pygame.Sound that tracks the state of a single sound """
-
     def __init__(self, sound):
         self.sound = sound
         self.is_playing = False
@@ -68,7 +71,6 @@ class SoundHandler(Sound):
 
 
 class SoundEffect(object):
-
     def __init__(self, sound):
         self.sound = sound
         self.channel = None

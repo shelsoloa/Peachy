@@ -1,6 +1,8 @@
+"""Peachy Graphics module
+"""
 import math
-import pygame
 
+import pygame
 from pygame import Surface
 from pygame import gfxdraw
 from pygame.freetype import Font
@@ -21,10 +23,17 @@ _color = pygame.Color(0, 0, 0)
 _font = None
 
 
-""" Drawing """
+# Drawing
 
 
 def draw(image, x, y, args=0):
+    """Draw an image to the current context
+
+    Args:
+        image (Surface): A Surface object to render to the context
+        x (int): The x-coordinate to render the image at.
+        y (int): The y-coordinate to render the image at.
+    """
     x -= _translation.x
     y -= _translation.y
 
@@ -165,7 +174,7 @@ def draw_text(text, x, y, aa=True, center=False, font=None):
 
 
 """ State Modification """
-# TODO Only apply transformations to current context and subcontexts
+# TODO Only apply transformations to current context and sub-contexts
 
 
 def font():
@@ -277,6 +286,10 @@ def translate(x, y, absolute=True):
 """ Image Manip """
 
 
+def flip(image, x, y):
+    return pygame.transform.flip(image, x, y)
+
+
 def rotate(image, degree):
     return pygame.transform.rotate(image, degree)
 
@@ -310,6 +323,29 @@ def splice(image, frame_width, frame_height, margin_x=0, margin_y=0):
             y += frame_height + margin_y
 
     return sub_images
+
+
+class Context(object):
+    def __init__(self, width=0, height=0, x=0, y=0, surface=None):
+        # TODO attempt to make hardware surface first
+        # TODO check SDL_video.h
+        if surface is None:
+            self.surface = pygame.Surface(width, height)
+            self.width = width
+            self.height = height
+        else:
+            self.surface = surface
+            self.width = surface.get_width()
+            self.height = surface.get_height()
+        self.x = x
+        self.y = y
+        self.transformations = []
+
+    def resize(self, width, height):
+        # TODO check for memory leaks
+        self.surface = pygame.Surface(width, height)
+        self.width = width
+        self.height = height
 
 
 class SpriteMap(object):

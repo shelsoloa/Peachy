@@ -1,301 +1,152 @@
-import os
+"""Peachy Stages
+    peachy.stage
+
+Modules for loading and handling stages. Uses pytmx for tiled stages and a
+generic StageData model for custom loaders.
+"""
+
+import logging
 import peachy
+import pytmx
 
 
 def load_tiled_tmx(path):
-    """ Creates a new StageData object from a tiled .tmx file """
+    """Load a tiled TMX file.
 
-    xml = peachy.fs.open_xml(path)
-    if xml is None:
-        raise IOError('stage "{0}" not found'.format(path))
+    Loads a tiled TMX map using pytmx, and returns a pytmx.TiledMap. Also:
+    appends layer_type(str) to pytmx layers, to make parsing simpler.
 
-    stage_raw = xml.getElementsByTagName('map')[0]
+    Args:
+        path (str): Absolute path to the tiled TMX resource.
 
-    asset_path = os.path.dirname(path)
+    Returns:
+        pytmx.TiledMap: A reference to the loaded tiled map.
 
-    stage = StageData()
+    Todo:
+        Custom image loading that utilizes peachy.fs.load_image.
+    """
+    tiled_map = pytmx.util_pygame.load_pygame(
+        peachy.fs.use_resource_directory(path))
 
-    # Load base attributes
-    stage.tile_width = int(stage_raw.getAttribute('tilewidth'))
-    stage.tile_height = int(stage_raw.getAttribute('tileheight'))
-    stage.width = int(stage_raw.getAttribute('width')) * stage.tile_width
-    stage.height = int(stage_raw.getAttribute('height')) * stage.tile_height
-    stage.path = path
+    for layer in tiled_map.layers:
+        if isinstance(layer, pytmx.TiledTileLayer):
+            layer.layer_type = 'tile'
+        elif isinstance(layer, pytmx.TiledObjectGroup):
+            layer.layer_type = 'object group'
+        elif isinstance(layer, pytmx.TiledImageLayer):
+            layer.layer_type = 'image'
 
-    map_properties = xml.getElementsByTagName('properties')
-    try:
-        for prop in map_properties[0].getElementsByTagName('property'):
-            property_name = prop.getAttribute('name')
-            property_value = prop.getAttribute('value')
-            stage.properties[property_name] = property_value
-    except IndexError:
-        pass
-
-    # Load tilesets
-    for tileset_raw in stage_raw.getElementsByTagName('tileset'):
-        tileset = stage._Tileset()
-        tileset.firstGID = int(tileset_raw.getAttribute('firstgid'))
-
-        # parse .TSX
-        tsx_source = tileset_raw.getAttribute('source')
-        if tsx_source:
-            tsx_xml = peachy.fs.open_xml(os.path.join(asset_path, tsx_source))
-            if tsx_xml is None:
-                raise IOError("[ERROR] Could not load tileset: " + tsx_source)
-            else:
-                tileset_raw = tsx_xml.getElementsByTagName('tileset')[0]
-
-        tileset.name = tileset_raw.getAttribute('name')
-        tileset.tilewidth = int(tileset_raw.getAttribute('tilewidth'))
-        tileset.tileheight = int(tileset_raw.getAttribute('tileheight'))
-
-        try:
-            tileset.image = peachy.fs.get_image(tileset.name)
-        except IOError:
-            image_raw = tileset_raw.getElementsByTagName('image')[0]
-            source = image_raw.getAttribute('source')
-            source_path = os.path.abspath(os.path.join(asset_path, source))
-
-            tileset.image = peachy.fs.load_image(tileset.name, source_path)
-
-        stage.tileset_images += peachy.graphics.splice(tileset.image,
-                                                       tileset.tilewidth,
-                                                       tileset.tileheight)
-
-        properties = tileset_raw.getElementsByTagName('property')
-        for prop in properties:
-            property_name = prop.getAttribute('name')
-            property_value = prop.getAttribute('value')
-            tileset.properties[property_name] = property_value
-
-        stage.tilesets.append(tileset)
-
-    # Load layers and tiles
-    layer_count = 0
-    for layer_raw in stage_raw.getElementsByTagName('layer'):
-
-        layer = stage._Layer()
-        layer.name = layer_raw.getAttribute('name')
-        layer.width = int(layer_raw.getAttribute('width')) * stage.tile_width
-        layer.height = int(layer_raw.getAttribute('height')) * stage.tile_height
-        layer.order = layer_count
-        layer_count += 1
-
-        tile_x = 0
-        tile_y = 0
-
-        for tile_raw in layer_raw.getElementsByTagName('tile'):
-            tile_id = int(tile_raw.getAttribute('gid'))
-
-            if tile_id > 0:
-                tile = stage._Tile()
-                tile.x = tile_x
-                tile.y = tile_y
-                tile.gid = tile_id
-                layer.tiles.append(tile)
-
-            tile_x += stage.tile_width
-            if tile_x == layer.width:
-                tile_x = 0
-                tile_y += stage.tile_height
-
-        properties = layer_raw.getElementsByTagName('property')
-        for prop in properties:
-            property_name = prop.getAttribute('name')
-            property_value = prop.getAttribute('value')
-            layer.properties[property_name] = property_value
-
-        stage.layers.append(layer)
-
-    # Load objects
-    for object_group in stage_raw.getElementsByTagName('objectgroup'):
-
-        group = object_group.getAttribute('name')
-
-        for object_raw in object_group.getElementsByTagName('object'):
-
-            obj = stage._Object()
-            obj.group = group
-            obj.name = object_raw.getAttribute('name')
-            obj.type = object_raw.getAttribute('type')
-            obj.x = int(object_raw.getAttribute('x'))
-            obj.y = int(object_raw.getAttribute('y'))
-
-            try:
-                obj.w = int(object_raw.getAttribute('width'))
-            except ValueError:
-                obj.w = 0
-
-            try:
-                obj.h = int(object_raw.getAttribute('height'))
-            except ValueError:
-                obj.h = 0
-
-            # parse polygon
-            polygon = object_raw.getElementsByTagName('polygon') or \
-                object_raw.getElementsByTagName('polyline')
-            if polygon:
-                points_raw = polygon[0].getAttribute('points').split()
-                for raw_point in points_raw:
-                    raw_point = raw_point.split(',')
-                    p = peachy.geo.Point(int(raw_point[0]), int(raw_point[1]))
-                    obj.polygon_points.append(p)
-                obj.is_polygon = True
-
-            # parse properties
-            properties = object_raw.getElementsByTagName('property')
-            for prop in properties:
-                property_name = prop.getAttribute('name')
-                property_value = prop.getAttribute('value')
-                obj.properties[property_name] = property_value
-
-            stage.objects.append(obj)
-
-    return stage
+    return tiled_map
 
 
-def render_map(stage):
-    """ Convenience function that render all layers """
+def render_tiled_map(stage):
+    """Convenience function for rendering all layers in a tiled map.
+
+    Args:
+        stage(pytmx.TiledMap): A stage file
+    """
     for layer in stage.layers:
-        render_layer(layer)
+        if isinstance(layer, pytmx.TiledTileLayer):
+            render_tiled_layer(layer)
 
 
-def render_layer(stage, layer):
-    """ Render a single layer by providing reference or layer name """
+def render_tiled_layer(stage, layer):
+    """Render a single layer by providing reference or layer name.
 
-    if isinstance(layer, str):
-        for x in stage.layers:
-            if x.name == layer:
-                layer = x
-                break
+    Args:
+        stage(pytmx.TiledMap, StageData): A stage object, pytmx or StageData.
+        layer(pytmx.TiledTileLayer, StageLayer, str): A stage layer object,
+            pytmx or StageLayer. Can also specify a string name and this
+            function will find the layer with said name.
+
+    Todo:
+        Tile animations.
+    """
+
+    if type(layer) == str:
+        if isinstance(stage, pytmx.TiledMap):
+            layer = stage.get_layer_by_name(layer)
+        elif isinstance(stage, StageData):
+            layer = next((l for l in stage.layers if l.name == layer), None)
         else:
             layer = None
 
     try:
-        for tile in layer.tiles:
-            peachy.graphics.draw(stage.tileset_images[tile.gid - 1],
-                                 tile.x, tile.y)
+        for x, y, image in layer.tiles():
+            if image:
+                peachy.graphics.draw(image, x * stage.tilewidth,
+                                     y * stage.tileheight)
     except AttributeError:
-        peachy.DEBUG('[ERROR] Layer could not be rendered ' + layer)
+        logging.warning('Layer could not be rendered ' + layer)
 
 
 class StageData(object):
-    """ Holds raw information about the current stage """
-
     def __init__(self):
+        self.name = ''
+
         self.width = 0
         self.height = 0
         self.tile_width = 0
         self.tile_height = 0
 
-        self.layers = []  # Cannot be dict because layers must remain in order
-        self.objects = []
+        # RGB or HEX
+        self.background_color = ''
+
+        self.layers = []  # Cannot be dict, layers must remain in order
         self.tilesets = []
         self.tileset_images = []
 
-        self.properties = {}
-
         self.path = ''
-        self.name = ''  # optional
 
     def clear(self):
+        """Clear the stage of all data."""
         del self.layers[:]
         del self.tilesets[:]
         del self.tileset_images[:]
-        del self.objects[:]
-        self.properties.clear()
 
-    class _Layer(object):
+    class StageLayer(object):
+        """StageData Layer
+
+        Attributes:
+            name (str): Name of the layer
+            tiles (list[StageData.StageTile]): A list containing all the tiles
+                that belong to this stage.
+        """
         def __init__(self):
             self.name = ''
-            self.width = 0
-            self.height = 0
             self.tiles = []
-            self.properties = {}
 
         def __repr__(self):
-            return "<Tiled Layer> " + self.name
+            return "<Stage Layer> " + self.name
 
-    class _Object(object):
-        def __init__(self):
-            self.group = ''
-            self.name = ''
-            self.type = ''
-            self.x = 0
-            self.y = 0
-            self.w = 0
-            self.h = 0
-            self.is_polygon = False
-            self.polygon_points = []
-            self.properties = {}
+    class StageTile(object):
+        """StageData Tile
 
-    class _Tile(object):
+        Attributes:
+            x (int): The x-coordinate of this tile (in tiles)
+            y (int): The y-coordinate of this tile (in tiles)
+            gid (int): The global ID of this tile (related to its place among
+                all tiles spanning all loaded tilesets).
+        """
         def __init__(self):
             self.x = 0
             self.y = 0
             self.gid = 0
 
-    class _Tileset(object):
+    class StageTileset(object):
+        """StageData Tileset Reference
+
+        Tilesets are loaded to resources. This class keeps a reference to
+        a specific stages representation of a Tileset.
+
+        Attributes:
+            name (str): The name of the tileset (USED AS REFERENCE TO RESOURCE)
+            firstgid (int): The starting global ID for this tileset.
+            tilewidth (int): The width of an individual tile.
+            tileheight (int): The height of an individual tile.
+        """
         def __init__(self):
             self.name = ''
             self.firstgid = 0
             self.tilewidth = 0
             self.tileheight = 0
-            self.properties = {}
-
-
-class AStarGrid(object):
-    """ Has not been updated to conform with current StageData object """
-
-    def __init__(self, width, height):
-        self.width = width
-        self.height = height
-        self.obstructions = []
-
-    def in_bounds(self, location):
-        x, y = location
-        if 0 <= x < self.width and 0 <= y < self.width:
-            return True
-        return False
-
-    def cost(self, location, destination):
-        x1, y1 = location
-        x2, y2 = destination
-
-        if (x1 - x2) == 0 or (y1 - y2) == 0:
-            return 1
-        else:
-            return 1.5
-
-    def passable(self, location):
-        return location not in self.obstructions
-
-    def neighbours_dep(self, location):
-        x, y = location
-        results = [(x, y + 1), (x, y - 1), (x + 1, y), (x - 1, y)]
-        results = filter(self.in_bounds, results)
-        results = filter(self.passable, results)
-        return results
-
-    def neighbours(self, location):
-        x, y = location
-        results = []
-
-        for translation in [(0, 1), (0, -1), (1, 0), (1, 1),
-                            (1, -1), (-1, 0), (-1, 1), (-1, -1)]:
-
-            trans_x, trans_y = translation
-            destination = (x + trans_x, y + trans_y)
-
-            if self.passable(destination):
-
-                if trans_x != 0 and trans_y != 0:
-                    border_one = (x + trans_x, y)
-                    border_two = (x, y + trans_y)
-                    if self.passable(border_one) and self.passable(border_two):
-                        results.append(destination)
-                else:
-                    results.append(destination)
-
-        results = filter(self.in_bounds, results)
-        return results
