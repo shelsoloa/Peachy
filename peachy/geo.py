@@ -6,10 +6,11 @@ primary example being peachy.Entity).
 """
 
 
+import copy
 import math
 
 
-def distance(point_one, point_two):
+def distance_between_points(point_one, point_two):
     """Calculate the distance between two points.
 
     Args:
@@ -24,8 +25,44 @@ def distance(point_one, point_two):
     return math.sqrt(math.pow(xb - xa, 2) + math.pow(yb - ya, 2))
 
 
+def distance_between_shapes(shape_a, shape_b):
+    """Returns int, the distance between the center of two peachy.geo shapes."""
+    point_one = None
+    point_two = None
+
+    try:
+        point_one = shape_a.center
+    except ValueError:
+        point_one = (shape_a[0], shape_a[1])
+
+    try:
+        point_two = shape_b.center
+    except ValueError:
+        point_two = (shape_b[0], shape_b[1])
+
+    return distance_between_points(point_one, point_two)
+
+
 class Shape(object):
-    pass
+    def temp_relocate(self, x=None, y=None):
+        """Relocate a shape.
+
+        The purpose of this function is to move a shape before doing collision
+        checks on it.
+
+        Args:
+            x (int, optional): The x coordinate to relocate to.
+            y (int, optional): The y coordinate to relocate to.
+
+        Returns:
+            Shape: a copy of the shape object that has been relocated.
+        """
+        working_shape = copy.copy(self)
+        if x is not None:
+            working_shape.x = x
+        if y is not None:
+            working_shape.y = y
+        return working_shape
 
 
 class Circle(Shape):
@@ -133,7 +170,7 @@ class Line(Shape):
     @property
     def length(self):
         """Returns int, the length of the line."""
-        return distance(self.p1, self.p2)
+        return distance_between_points(self.p1, self.p2)
 
 
 class Point(Shape):
@@ -195,18 +232,29 @@ class Rect(Shape):
                 self.width == other[2] and \
                 self.height == other[3]
 
+    def __getitem__(self, i):
+        return self.ls()[i]
+
     def __iter__(self):
-        yield self.x
-        yield self.y
-        yield self.width
-        yield self.height
+        for attribute in self.ls():
+            yield attribute
+
+    def __setitem__(self, index, value):
+        if index == 0:
+            self.x = value
+        elif index == 1:
+            self.y = value
+        elif index == 2:
+            self.width = value
+        elif index == 3:
+            self.height = value
 
     def __str__(self):
         return "({}, {}, {}, {})"\
             .format(self.x, self.y, self.width, self.height)
 
     def ls(self):
-        """ Return as list: [x, y, width, height] """
+        """Return as list: [x, y, width, height]."""
         return [self.x, self.y, self.width, self.height]
 
     @property
@@ -287,148 +335,3 @@ class Rect(Shape):
     @top.setter
     def top(self, top):
         self.y = top
-
-    def collides(self, other, x, y):
-        """Check if 'self' is colliding with a rectangle.
-
-        Args:
-            other (peachy.Rect): The rect to check for collision.
-            x (int): The x-coordinate to use for this rectangle.
-            y (int): The y-coordinate to use for this rectangle.
-
-        Returns:
-            bool: True, if collision is occuring.
-
-        Raises:
-            AttributeError: The object provided was invalid.
-        """
-
-        try:
-            ox, oy, owidth, oheight = other
-
-            right_a = x + self.width
-            bottom_a = y + self.height
-            right_b = ox + owidth
-            bottom_b = oy + oheight
-
-            if x < right_b and \
-               right_a > ox and \
-               y < bottom_b and \
-               bottom_a > oy:
-                return True
-            else:
-                return False
-
-        except AttributeError:
-            print("Invalid object passed to collides function.")
-            return False
-
-    def collides_circle(self, circle, x=None, y=None):
-        """Check if 'self' is colliding with a circle
-
-        Args:
-            circle (peachy.geo.Circle, tuple[x, y, r]): The circle to check for
-                collision. Represented using a Circle or tuple.
-            x (int, optional): Override for self.x.
-            y (int, optional): Override for self.y.
-        """
-        if x is None or y is None:
-            x = self.x
-            y = self.y
-
-        circle_x, circle_y, radius = circle
-        circle_x += radius
-        circle_y += radius
-
-        rx = x + self.width / 2
-        ry = y + self.height / 2
-
-        dist_x = abs(circle_x - rx)
-        dist_y = abs(circle_y - ry)
-        half_width = self.width / 2
-        half_height = self.height / 2
-
-        if dist_x > (half_width + radius) or \
-           dist_y > (half_height + radius):
-            return False
-
-        if dist_x <= half_width or \
-           dist_y <= half_height:
-            return True
-
-        corner_distance = (dist_x - half_width)**2 + (dist_y - half_height)**2
-
-        return corner_distance <= (radius**2)
-
-    def collides_point(self, point, x=None, y=None):
-        """Check if 'self' is colliding with a point.
-
-        Args:
-            point (peachy.geo.Point, tuple[x, y]): The point represented by
-                either a peachy Point or a tuple.
-            x (int, optional): Override for self.x
-            y (int, optional): Override for self.y
-        """
-        if x is None or y is None:
-            x = self.x
-            y = self.y
-
-        px, py = point
-        if x <= px <= x + self.width and y <= py <= y + self.height:
-            return True
-        else:
-            return False
-
-    def collides_rect(self, rect, x=None, y=None):
-        """Check if 'self' is colliding with a rectangle.
-
-        Args:
-            rect (peachy.geo.Rect, tuple[x, y, width, height]): The rectangle
-                represented by either a peachy Point or tuple.
-            x (int, optional): Override for self.x
-            y (int, optional): Override for self.y
-        """
-        if x is None or y is None:
-            x = self.x
-            y = self.y
-
-        rx, ry, rwidth, rheight = rect
-
-        left_a = x
-        right_a = x + self.width
-        top_a = y
-        bottom_a = y + self.height
-
-        left_b = rx
-        right_b = rx + rwidth
-        top_b = ry
-        bottom_b = ry + rheight
-
-        if (bottom_a <= top_b or top_a >= bottom_b or
-                right_a <= left_b or left_a >= right_b):
-            return False
-        else:
-            return True
-
-    def distance_from_shape(self, other):
-        """Returns int, the distance in pixels, between the center of self and
-        a geo object (peachy.geo.Shape)
-        """
-        ox, oy = other.center
-        return self.distance_from_point(ox, oy)
-
-    def distance_from_rect(self, r):
-        """Returns int, the distance in pixels between the center of self and
-        a rectangle.
-        """
-        sx, sy = self.center
-        ox, oy = r.center
-        a = abs(sx - ox)
-        b = abs(sy - oy)
-        return math.sqrt(a**2 + b**2)
-
-    def distance_from_point(self, px, py):
-        """Returns int, the distance in pixels between center and a point."""
-        a = abs(self.center_x - px)
-        b = abs(self.center_y - py)
-        return math.sqrt(a**2 + b**2)

@@ -15,7 +15,6 @@ import os
 
 import peachy
 import peachy.fs
-import peachy.geo
 import peachy.graphics
 import peachy.utils
 
@@ -73,7 +72,7 @@ class Engine(object):
                 run() is called). Disabled by default. Can also be set via
                 PeachyConfiguration.
         """
-        # Set PC reference
+        # Set global PC reference
         _set_PC(self)
 
         self.worlds = {}
@@ -407,7 +406,7 @@ class Engine(object):
         self.world.update()
 
 
-class Entity(peachy.geo.Rect):
+class Entity(object):
     """Interactive game object
 
     Entity is the main actor in the Peachy framework. Entity's are held within
@@ -417,10 +416,6 @@ class Entity(peachy.geo.Rect):
     collision detection.
 
     Attributes:
-        x (int): The x coordinate, used for rendering and collision detection.
-        y (int): The y coordinate, used for rendering and collision detection.
-        width (int): The width of this Entity's bounding box.
-        height (int): The height of this Entity's bounding box.
         name (str): A unique string used to identify this Entity. 1 per Room.
         group (str): A string used to organize this entity into categories, an
             Entity can be a part of multiple groups. Groups are separated with
@@ -432,39 +427,23 @@ class Entity(peachy.geo.Rect):
             then self.render() will not be called each frame.
         solid (bool): Is this entity collidable? If this is set to False
             then this entity is ignored during collision detection checks.
-        sprite (object): A reference to this Entity's sprite. Set to None by
-            default.
         order (int): Order of entity in Room.entities. Lower order is rendered
             and updated first.
-        container (object): A reference to the owner of this entity (usually a
-            Room). Must be set before performing any operations involving
-            groups (Entity.group).
+        container (peachy.Room): A reference to the owner of this entity.
+            Must be set before performing any operations involving groups
+            (Entity.group).
     """
 
-    def __init__(self, x=0, y=0):
-        """Initialize Entity.
-        Args:
-            x (int, optional): The x coordinate. Defaults to 0.
-            y (int, optional): The y coordinate. Defaults to 0.
-        """
-        super().__init__(x, y, 0, 0)  # Initializes x, y, width, height
-
+    def __init__(self):
+        """Initialize Entity"""
         self.group = ''
         self.__groups = []
         self.name = ''
-
-        # Note: These can probably be removed. Not every entity has a velocity.
-        # Also, Entity class performs no operations involving self.velocity
-        self.velocity_x = 0       # x-axis velocity
-        self.velocity_y = 0       # y-axis velocity
 
         self.active = True
         self.visible = True
         self.solid = False
 
-        # Note: This can probably be removed. Not every entity has a sprite.
-        # Also, Entity class performs no operations involving self.sprite.
-        self.sprite = None
         self.order = 0
 
         self.container = None
@@ -489,104 +468,6 @@ class Entity(peachy.geo.Rect):
         self.container.remove(self)
         self.active = False
 
-    def collides_group(self, group, x=None, y=None):
-        """Check if colliding with group.
-
-        Check if self is colliding with any entity that is a member of the
-        specified group.
-
-        Args:
-            group (str): The name of the group to survey.
-            x (int, optional): Temporary replacement x coordinate for self.
-            y (int. optional): Temporary replacement y coordinate for self.
-
-        Returns:
-            list[peachy.Entity]: Every entity of group colliding with self.
-        """
-
-        if x is None:
-            x = self.x
-        if y is None:
-            y = self.y
-
-        collisions = []
-        for entity in self.container.get_group(group):
-            if entity is not self and entity.active and \
-               self.collides(entity, x, y):
-                collisions.append(entity)
-        return collisions
-
-    def collides_groups(self, groups, x=None, y=None):
-        """Check if colliding with groups.
-
-        Check if self is colliding with any entity that is a member of ANY
-        of the groups specified.
-
-        Args:
-            groups (list[str]): A string list of group names to survey.
-            x (int, optional): Temporary replacement x coordinate for self.
-            y (int. optional): Temporary replacement y coordinate for self.
-
-        Returns:
-            list[peachy.Entity]: Every entity colliding with self that is a
-                member of any of the specified groups.
-        """
-
-        if x is None:
-            x = self.x
-        if y is None:
-            y = self.y
-
-        collisions = []
-        for entity in self.container.get_group(*groups):
-            if entity.active and self.collides(entity, x, y):
-                collisions.append(entity)
-        return collisions
-
-    def collides_name(self, name, x=None, y=None):
-        """Check if colliding with named entity.
-
-        Args:
-            name (str): The name of the entity to check
-            x (int, optional): Temporary replacement x coordinate for self.
-            y (int. optional): Temporary replacement y coordinate for self.
-
-        Returns:
-            peachy.Entity: Returns entity if colliding or None if no collision.
-        """
-        if x is None or y is None:
-            x = self.x
-            y = self.y
-
-        entity = self.container.get_name(name)
-        if entity and self.collides(entity, x, y):
-            return entity
-        return None
-
-    def collides_solid(self, x=None, y=None):
-        """Check if colliding with any solid entity.
-
-        Checks if self collides with any entity that has Entity.solid set as
-        True.
-
-        Args:
-            x (int, optional): Temporary replacement x coordinate for self.
-            y (int. optional): Temporary replacement y coordinate for self.
-
-        Returns:
-            list[peachy.Entity]: Every solid entity colliding with self.
-        """
-        if x is None or y is None:
-            x = self.x
-            y = self.y
-
-        collisions = []
-        for entity in self.container:
-            if entity is not self and entity.active and entity.solid and \
-               self.collides(entity, x, y):
-                collisions.append(entity)
-        return collisions
-
     def member_of(self, *groups):
         """Check if this entity is a member of a group.
 
@@ -597,6 +478,8 @@ class Entity(peachy.geo.Rect):
             bool: True if entity is a member of any of the groups specified.
         """
         # TODO change to any()
+        # any(g for g in self.group if g in groups)
+
         for group in self.group:
             if group in groups:
                 return True
