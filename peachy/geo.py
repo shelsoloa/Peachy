@@ -44,8 +44,8 @@ def distance_between_shapes(shape_a, shape_b):
 
 
 class Shape(object):
-    def temp_relocate(self, x=None, y=None):
-        """Relocate a shape.
+    def at_point(self, x=None, y=None):
+        """Return a copy of a shape at a specified point.
 
         The purpose of this function is to move a shape before doing collision
         checks on it.
