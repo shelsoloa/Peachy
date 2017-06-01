@@ -18,6 +18,15 @@ var/
 .installed.cfg
 *.egg
 
+# Sphinx documentation
+docs/_build/
+
 # Other
 .idea/
+
+# Environments
+.env
+.venv
+env/
 venv/
+ENV/
