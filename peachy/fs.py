@@ -95,8 +95,6 @@ def resource_loader(f):
         if resource:
             return resource.data
 
-        resource_path = use_resource_directory(resource_path)
-
         try:
             assert os.path.isfile(resource_path)
         except AssertionError:
@@ -189,7 +187,7 @@ def get_image(resource_name):
     if image is None:
         return load_image('', resource_name, False)
     else:
-        return image.resource
+        return image.data
 
 
 def get_font(resource_name, pt_size=-1):
@@ -213,7 +211,7 @@ def get_font(resource_name, pt_size=-1):
     if font is None and pt_size > 0:
         return load_font('', resource_name, pt_size, False)
     else:
-        return font.resource
+        return font.data
 
 
 def get_sound(resource_name):
@@ -232,7 +230,7 @@ def get_sound(resource_name):
     if sound is None:
         return load_sound('', resource_name, False)
     else:
-        return sound.resource
+        return sound.data
 
 
 @resource_loader
