@@ -4,10 +4,16 @@ Geometric shape representations. The majority of these shapes are for
 convenience, except for Rect which is used extensively throughout peachy (a
 primary example being peachy.Entity).
 """
-
-
 import copy
+import enum
 import math
+
+
+class ShapeEnum(enum.IntEnum):
+    CIRCLE = 1
+    LINE = 2
+    POINT = 3
+    RECT = 0
 
 
 def distance_between_points(point_one, point_two):
@@ -22,7 +28,7 @@ def distance_between_points(point_one, point_two):
     """
     xa, ya = point_one
     xb, yb = point_two
-    return math.sqrt(math.pow(xb - xa, 2) + math.pow(yb - ya, 2))
+    return math.sqrt((xb - xa)**2 + (yb - ya)**2)
 
 
 def distance_between_shapes(shape_a, shape_b):
@@ -121,6 +127,10 @@ class Circle(Shape):
     def diameter(self, diameter):
         self.radius = diameter / 2
 
+    @property
+    def shapeid(self):
+        return ShapeEnum.CIRCLE
+
     def contains(self, x, y):
         """"Returns True, if the point (x, y) lies within the circle."""
         return self.distance_from_point(x, y) <= self.radius
@@ -172,6 +182,10 @@ class Line(Shape):
         """Returns int, the length of the line."""
         return distance_between_points(self.p1, self.p2)
 
+    @property
+    def shapeid(self):
+        return ShapeEnum.LINE
+
 
 class Point(Shape):
     """2D Point
@@ -200,6 +214,10 @@ class Point(Shape):
     @property
     def center(self):
         return (self.x, self.y)
+
+    @property
+    def shapeid(self):
+        return ShapeEnum.POINT
 
 
 class Rect(Shape):
@@ -324,6 +342,10 @@ class Rect(Shape):
     @right.setter
     def right(self, right):
         self.x = right - self.width
+
+    @property
+    def shapeid(self):
+        return ShapeEnum.RECT
 
     @property
     def top(self):

@@ -12,6 +12,7 @@ Note:
 
 import logging
 import os
+import sys
 
 import peachy
 import peachy.fs
@@ -246,6 +247,13 @@ class Engine(object):
         else:
             logging.warning('World not found: {0}'.format(world_name))
             return None
+
+    def force_shutdown(self):
+        """Immediatly shutdown engine"""
+        self.__shutdown()  # Shutdown all peachy modules
+        pygame.event.get()  # Throw away any pending events
+        pygame.quit()  # Shutdown pygame modules
+        sys.exit()
 
     def get_world(self, world_name):
         """Get a :class:`World` by it name."""
