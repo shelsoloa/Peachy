@@ -133,8 +133,6 @@ class Engine(object):
         self._window_surface = pygame.display.set_mode(self.window_size, flags)
         self._canvas_surface = pygame.Surface(self.canvas_size)
 
-        self.resources = peachy.utils.ResourceManager()
-        peachy.fs.set_resource_manager(self.resources)
         peachy.graphics.set_default_context(self._canvas_surface)
         peachy.graphics.set_context(self._canvas_surface)
 
