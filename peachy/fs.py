@@ -7,28 +7,9 @@ raw objects, images, sounds, and a few others.
 import logging
 import pickle
 import pygame
-# import xml.dom.minidom
 
 import peachy.audio
 import peachy.graphics
-
-
-# def open_xml(path):
-#     """Retrieve an xml file from the hard drive.
-#
-#     Args:
-#         path (str): An absolute path to the requested xml file.
-#
-#     Returns:
-#         xml.dom.minidom: A parsed xml minidom object.
-#     """
-#     try:
-#         xml_file = open(path, 'r')
-#         data = xml_file.read()
-#         xml_file.close()
-#         return xml.dom.minidom.parseString(data)
-#     except IOError:
-#         logging.error('Could not load xml file: ' + path)
 
 
 def save_raw_data(data, file_name):

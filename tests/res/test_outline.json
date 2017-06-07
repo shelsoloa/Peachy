@@ -1,0 +1,29 @@
+{
+    "version": 1.0,
+    "TODO" : [
+        "add base_directory",
+        "load from directory outside of base directory",
+        "load from absolute path",
+        "load animation"
+    ],
+
+    "resources": [
+        {
+            "name": "test_png",
+            "type": "image",
+            "path": "test_png.png"
+        },
+        {
+            "name": "test_tmx",
+            "type": "tiled",
+            "path": "tmx1.tmx"
+        }
+    ],
+
+    "bundles": [
+        {
+            "name": "test_bundle",
+            "resources": ["test_png", "test_tmx"]
+        }
+    ]
+}

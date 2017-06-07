@@ -10,7 +10,6 @@ def cli():
 @cli.command()
 def build():
     """Build project executable."""
-    # build directory
     print('TODO')
 
 

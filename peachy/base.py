@@ -93,9 +93,6 @@ class Engine(object):
         canvas_height = canvas_size[1]
         self._canvas_surface = None
 
-        # Resource Manager
-        # TODO allow custom resource manager
-
         # Window
         self.window_size = (canvas_width * scale, canvas_height * scale)
         self._window_surface = None
@@ -309,52 +306,45 @@ class Engine(object):
         self.world.enter()
 
         running = True
-        try:  # a try to catch any missed exceptions
-            while running:
-                if self.world is not self.world:
-                    self.world = self.world
+        while running:
+            if self.world is not self.world:
+                self.world = self.world
 
-                # Parse events
-                for event in pygame.event.get():
-                    if event.type == pygame.locals.QUIT:
-                        running = False
-                        break
-                    elif event.type == pygame.locals.VIDEORESIZE:
-                        self.resize(event.w, event.h)
+            # Parse events
+            for event in pygame.event.get():
+                if event.type == pygame.locals.QUIT:
+                    running = False
+                    break
+                elif event.type == pygame.locals.VIDEORESIZE:
+                    self.resize(event.w, event.h)
 
-                peachy.utils.Input.poll()
+            peachy.utils.Input.poll()
 
-                # Update
-                self.__update()
+            # Update
+            self.__update()
 
-                # Render - Draw World
-                self.__render()
+            # Render - Draw World
+            self.__render()
 
-                # Render - Transformations
-                # TODO speed up scaling somehow
-                pygame.transform.scale(self._canvas_surface, self.window_size,
-                                       self._window_surface)
+            # Render - Transformations
+            # TODO speed up scaling somehow
+            pygame.transform.scale(self._canvas_surface, self.window_size,
+                                   self._window_surface)
 
-                # Render - Finalize
-                pygame.display.flip()
+            # Render - Finalize
+            pygame.display.flip()
 
-                # Maintain fps (display if DEBUG is active)
-                game_timer.tick(self.fps)
-                if self.debug_enabled:
-                    fps = round(game_timer.get_fps())
-                    pygame.display.set_caption(self.__title +
-                                               ' {' + str(fps) + '}')
+            # Maintain fps (display if DEBUG is active)
+            game_timer.tick(self.fps)
+            if self.debug_enabled:
+                fps = round(game_timer.get_fps())
+                pygame.display.set_caption(self.__title +
+                                           ' {' + str(fps) + '}')
 
-            self.__shutdown()  # Shutdown all peachy modules
-            pygame.event.get()  # Throw away any pending events
-            pygame.mixer.quit()
-            pygame.quit()  # Shutdown all pygame modules
-
-        except:
-            import traceback
-            print("[ERROR] Unexpected error. {0} shutting down."
-                  .format(self.__title))
-            traceback.print_exc()
+        self.__shutdown()  # Shutdown all peachy modules
+        pygame.event.get()  # Throw away any pending events
+        pygame.mixer.quit()
+        pygame.quit()  # Shutdown all pygame modules
 
     def toggle_fullscreen(self):
         """Toggle fullscreen
@@ -483,9 +473,6 @@ class Entity(object):
         Returns:
             bool: True if entity is a member of any of the groups specified.
         """
-        # TODO change to any()
-        # any(g for g in self.group if g in groups)
-
         for group in self.group:
             if group in groups:
                 return True
@@ -515,7 +502,6 @@ class Room(list):
         Args:
             world (peachy.World): The world to register this Room to.
         """
-        # self.entities = []  # Use a set() instead?
         super().__init__()
         self.world = world
         self.sort_required = False
