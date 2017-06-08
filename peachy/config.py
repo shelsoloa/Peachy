@@ -1,6 +1,9 @@
 """Peachy configuration module.
 
 Loading configuration:
+
+    Engine.init_from_config()
+
     >>> engine.config.from_module('config')
     # OR
     >>> engine.config.from_file('config.json')
@@ -20,10 +23,10 @@ class PeachyConfiguration(object):
     Inspired by configuration handling in Flask.
     """
 
-    """BACKEND used for rendering
+    """BACKEND library used for rendering
 
-    A future goal for peachy. Allow for different rendering backends to be used
-    instead of pygame.
+    A future goal for peachy. Allow for rendering using different libraries
+    such as: PySDL, pyglet, etc. Currently only pygame is supported.
     """
     BACKEND = 'pygame'
 
@@ -38,8 +41,7 @@ class PeachyConfiguration(object):
 
     """Amount of render calls per second and amount of update calls per second,
     respectively.
-
-    Note: not fully implemented, currently we use FRAMES_PER_SECOND for both.
+    Note: not fully implemented, currently FRAMES_PER_SECOND is used for both.
     """
     FRAMES_PER_SECOND = 60
     UPDATES_PER_SECOND = 60
@@ -51,13 +53,8 @@ class PeachyConfiguration(object):
     """Title that will be displayed in window caption."""
     TITLE = 'Game'
 
-    """Directory that resources are loaded from by default"""
-    RESOURCE_DIRECTORY = 'resources'
-
-    """Resource management class to be used.
-    Defaults to peachy.utils.ResourceManager
-    """
-    RESOURCE_MANAGER = None
+    """Path to resources.json"""
+    RESOURCE_DIRECTORY = 'res'
 
     """Width and height of rendering surface"""
     VIEW_WIDTH = 100
@@ -65,9 +62,3 @@ class PeachyConfiguration(object):
 
     """Multiplier to scale the screen by. Will increase window size."""
     VIEW_SCALE = 1
-
-    def from_module(self):
-        return
-
-    def from_json(self):
-        return

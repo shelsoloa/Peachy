@@ -19,7 +19,7 @@ def test_add_remove():
 
     assert res in rm
     assert 'test' in rm
-    assert rm.get_resource('test') is res
+    assert rm.get_resource('test') is res.data
 
     rm.remove_resource('test')
     assert res not in rm
@@ -41,6 +41,7 @@ def test_groups():
     rm.add_resource(res_b)
     rm.add_resource(res_c)
 
+    assert len(rm) == 3
     assert len(rm.get_group('a')) == 3
     assert len(rm.get_group('c')) == 2
     rm.remove_group('c')

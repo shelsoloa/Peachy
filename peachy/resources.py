@@ -21,11 +21,11 @@ class ResourceManager(object):
 
     def __contains__(self, resource):
         if isinstance(resource, Resource):
-            for _, res in self.resources.items():
+            for res in self.resources.values():
                 if res == resource:
                     return True
         else:
-            for _, res in self.resources.items():
+            for res in self.resources.values():
                 if res.name == resource or res.path == resource:
                     return True
         return False
@@ -37,7 +37,8 @@ class ResourceManager(object):
         bundle = self.outline.bundles.get(bundle_name)
         for resource_name in bundle.resources:
             res = self.outline.resources.get(resource_name)
-            self.load_resource(res.name, res.path, res.resource_type)
+            self.load_resource(res.name, res.path,
+                               res.resource_type, **res.additional)
         self.bundles.append(bundle)
 
     def deactivate_bundle(self, bundle_name):
@@ -62,7 +63,7 @@ class ResourceManager(object):
 
     def get_group(self, group_name):
         results = []
-        for _, resource in self.resources.items():
+        for resource in self.resources.values():
             if resource.member_of(group_name):
                 results.append(resource)
         return results
@@ -75,21 +76,42 @@ class ResourceManager(object):
         return resource
 
     def get_resource_by_name(self, res_name):
-        return self.resources.get(res_name)
-
-    def get_resource_by_path(self, res_path):
-        for _, resource in self.resources.items():
-            if resource.path == res_path:
-                return resource
+        res = self.resources.get(res_name)
+        if res is not None:
+            return res.data
         return None
 
-    def load_resource(self, res_name, res_path, res_type):
+    def get_resource_by_path(self, res_path):
+        for resource in self.resources.values():
+            if resource.path == res_path:
+                return resource.data
+        return None
+
+    def load_outline(self):
+        if self.outline is not None:
+            for res in self.outline.get_resources():
+                self.load_resource(res.name, res.path,
+                                   res.resource_type,
+                                   **res.additional)
+
+    def load_outline_resource(self, res_name):
+        for res in self.outline.get_resources():
+            if res.name == res_name:
+                self.load_resource(res.name, res.path,
+                                   res.resource_type,
+                                   **res.additional)
+
+    def load_resource(self, res_name, res_path, res_type,
+                      **optional):
         """Load a resource from the filesystem and save into manager"""
         resource_data = None
         if res_type == ResourceType.IMAGE:
             resource_data = peachy.fs.load_image(res_path)
         elif res_type == ResourceType.FONT:
-            resource_data = peachy.fs.load_font(res_path)
+            size = optional.get('size', 12)
+            resource_data = peachy.fs.load_font(res_path, size)
+            resource_data.oblique = optional.get('italic', False)
+            # resource_data.bold = optional.get('bold', False)
         elif res_type == ResourceType.SOUND:
             resource_data = peachy.fs.load_sound(res_path)
 
@@ -164,6 +186,9 @@ class ResourceOutline(object):
         else:
             self.bundles = {}
 
+    def get_resources(self):
+        return self.resources.values()
+
     @staticmethod
     def process(outline_path):
         outline_raw = ''
@@ -179,18 +204,31 @@ class ResourceOutline(object):
         resource_nodes = outline_raw.get('resources')
         for resource_node in resource_nodes:
             res_type = resource_node['type']
+            option = {}
+
             if res_type == 'image':
                 res_type = ResourceType.IMAGE
             elif res_type == 'font':
                 res_type = ResourceType.FONT
+                option['size'] = resource_node.get('size', 12)
+                option['bold'] = resource_node.get('bold', False)
+                option['italic'] = resource_node.get(
+                    'italic', False)
             elif res_type == 'sound':
                 res_type = ResourceType.SOUND
 
             res_path = os.path.join(resource_directory, resource_node['path'])
+            res_name = resource_node.get('name')
+            if res_name is None:
+                res_name = res_path
+
+            if not os.path.isfile(res_path):
+                logging.warning('Resource %s not found %s' %
+                                (res_name, res_path))
 
             resource = ResourceOutline_Resource(
-                res_type, resource_node['name'], res_path)
-            resources[resource.name] = resource
+                res_type, res_name, res_path, **option)
+            resources[res_name] = resource
 
         # convert bundles
         bundles = {}
@@ -201,7 +239,6 @@ class ResourceOutline(object):
             bundle_resources = []
             bundle_resource_nodes = bundle_node.get('resources', [])
             for bundle_resource in bundle_resource_nodes:
-                print(bundle_resource)
                 if bundle_resource in resources:
                     bundle_resources.append(bundle_resource)
                 else:

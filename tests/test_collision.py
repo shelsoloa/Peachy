@@ -177,7 +177,7 @@ def test_collides_multiple():
     room.add(LineEntity(-50, 50, 50, 50))
 
     assert len(collision(room, rect_entity)) == 3
-    assert not collision(room, RectEntity(200, 200, 50, 50))
+    assert len(collision(room, RectEntity(200, 200, 50, 50))) == 0
 
 
 def test_collide_name():

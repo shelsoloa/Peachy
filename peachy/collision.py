@@ -1,5 +1,8 @@
+from peachy.geo import ShapeEnum
+
 # Collision functions are alphabetical but prioritze rectangles because
 # they are most common
+
 """The max tolerance for floating point errors."""
 TOLERANCE = 0.001
 
@@ -18,19 +21,28 @@ def rect_to_vector_segments(rect):
 
 
 class CollisionResult(object):
-    def __init__(self, f, a, b):
-        self.collision_function = f
-        self.shape_a = a
-        self.shape_b = b
+    """CollisionResult is returned from group collision functions. It contains
+    information on collisions occuring.
+
+    Attributes:
+        function (func): The function used to check for collision.
+        shape (object): The shape that was colliding with the target.
+        is_first (bool): Is shape the first argument in the collision function
+            or is it target.
+    """
+    def __init__(self, collision_function, shape, first):
+        self.function = collision_function
+        self.shape = shape
+        self.is_first = first
 
 
 def get_collision_function(shape_a, shape_b):
-    from peachy.geo import ShapeEnum
-
     collision_function = None
+    swap = False
 
     if shape_a.shapeid > shape_b.shapeid:
         shape_a, shape_b = shape_b, shape_a
+        swap = True
 
     if shape_a.shapeid == ShapeEnum.RECT:
         if shape_b.shapeid == ShapeEnum.RECT:
@@ -68,17 +80,17 @@ def get_collision_function(shape_a, shape_b):
             collision_function = point_point
         elif shape_b.shapeid == ShapeEnum.LINE:
             collision_function = line_point
-    # elif shape_a.shapeid == POLYGON_ID:
-    #     pass
 
-    return collision_function
+    # TODO POLYGON_ID
+
+    return collision_function, swap
 
 
 def collides_first(container, main_shape):
     for shape in container:
-        result = collides_unknown(main_shape, shape)
-        if result:
-            return result
+        collision, f, swap = collides_unknown(main_shape, shape)
+        if collision:
+            return CollisionResult(f, shape, swap)
     return False
 
 
@@ -107,20 +119,22 @@ def collides_group(container, group, shape, collision_function=None):
 
     collision_type = None
     collision = None
+    swap = False
+
     for test in shapes:
-            if shape is test:
-                continue
+        if shape is test:
+            continue
 
-            if collision_type != test.shapeid:
-                collision = get_collision_function(shape, test)
+        if collision_type != test.shapeid:
+            collision, swap = get_collision_function(shape, test)
 
-            if shape.shapeid < test.shapeid:
-                a, b = shape, test
-            else:
-                a, b = test, shape
+        if not swap:
+            a, b = shape, test
+        else:
+            a, b = test, shape
 
-            if collision(a, b):
-                collisions.append(CollisionResult(collision, a, b))
+        if collision(a, b):
+            collisions.append(CollisionResult(collision, test, swap))
 
     return collisions
 
@@ -144,6 +158,8 @@ def collides_groups(container, groups, main_shape, collision_function=None):
             member of any of the specified groups.
     """
 
+    # TODO fix this abomination
+
     collisions = []
     shapes = container.get_group(*groups)
     if len(shapes) > 0:
@@ -162,8 +178,10 @@ def collides_groups(container, groups, main_shape, collision_function=None):
 def collides_multiple(container, main_shape):
     collisions = []
     for shape in container:
-        if main_shape is not shape and collides_unknown(main_shape, shape):
-            collisions.append(shape)
+        if main_shape is not shape:
+            collided, _, _ = collides_unknown(main_shape, shape)
+            if collided:
+                collisions.append(shape)
     return collisions
 
 
@@ -179,18 +197,19 @@ def collides_name(container, shape, name):
 
     target = container.get_name(name)
     if target:
-        result = collides_unknown(shape, target)
-        if result:
-            return result
+        collided, f, swap = collides_unknown(shape, target)
+        if collided:
+            return CollisionResult(f, target, swap)
     return None
 
 
 def collides_unknown(shape_a, shape_b):
-    collision = get_collision_function(shape_a, shape_b)
-    if collision(shape_a, shape_b):
-        return CollisionResult(collision, shape_a, shape_b)
-    else:
-        return None
+    collision, swap = get_collision_function(shape_a, shape_b)
+
+    if swap:
+        shape_a, shape_b = shape_b, shape_a
+
+    return collision(shape_a, shape_b), collision, swap
 
 
 def collides_solid(container, main_shape):
@@ -207,9 +226,9 @@ def collides_solid(container, main_shape):
     collisions = []
     for shape in container:
         if shape is not main_shape and shape.active and shape.solid:
-            result = collides_unknown(main_shape, shape)
-            if result:
-                collisions.append(result)
+            colliding, f, swap = collides_unknown(main_shape, shape)
+            if colliding:
+                collisions.append(CollisionResult(f, shape, swap))
     return collisions
 
 
@@ -382,7 +401,7 @@ def rect_line(rect, line):
     if rect_point(rect, (x1, y1)) and rect_point(rect, (x2, y2)):
         return True  # line inside of rect
     elif (max(x1, x2) < rx or min(x1, x2) > rr or
-         max(y1, y2) < ry or min(y1, y2) > rb):
+          max(y1, y2) < ry or min(y1, y2) > rb):
         return False  # line outside of rect
     else:
         # line possibly intersecting rect

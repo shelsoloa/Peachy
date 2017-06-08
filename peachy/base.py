@@ -104,9 +104,7 @@ class Engine(object):
             pygame.display.init()
             pygame.freetype.init()
             pygame.mixer.init()
-            # TODO Joystick module prints obstructing dialog, must build from
-            # source.
-            # pygame.joystick.init()
+            pygame.joystick.init()
         except Exception:
             if pygame.display.get_init() is None:
                 logging.error("Could not initialize pygame display. Abort!")
