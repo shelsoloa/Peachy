@@ -25,8 +25,7 @@ def load_tiled_tmx(path):
     Todo:
         Custom image loading that utilizes peachy.fs.load_image.
     """
-    tiled_map = pytmx.util_pygame.load_pygame(
-        peachy.fs.use_resource_directory(path))
+    tiled_map = pytmx.util_pygame.load_pygame(path)
 
     for layer in tiled_map.layers:
         if isinstance(layer, pytmx.TiledTileLayer):
