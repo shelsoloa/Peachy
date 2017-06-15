@@ -2,6 +2,9 @@ Peachy
 ------
 "A python3 framework that makes developing 2d games peachy keen."
 
+.. image:: images/logo.png
+   :alt: PEACHY
+
 Peachy is a python game development framework made to make developing games in
 python a bit more streamlined.
 
