@@ -7,10 +7,11 @@ def cli():
     pass
 
 
-@cli.command()
-def build():
-    """Build project executable."""
-    print('TODO')
+# @cli.command()
+# def build():
+#     """Build project executable."""
+#     # PyInstaller
+#     print('TODO')
 
 
 # @cli.command()

@@ -1,42 +1,39 @@
 Peachy
 ------
-game development done peachy keen
+"A python3 framework that makes developing 2d games peachy keen."
 
-
-What & Why?
------------
-Peachy is a python game development framework made to help develop games using
-python3. Peachy was created to fill a void, somewhere in between coding using a
-library and giving up control to a bloated engine. Peachy is a framework, like
-Flask, or FlashPunk (both of which were influences in Peachy's development).
-
+Peachy is a python game development framework made to make developing games in
+python a bit more streamlined.
 
 Features
 ________
 
 * Entity, World structure
 * Simple architecture
-* CLI utility
+* 2d collision detection for basic shapes
+* 2d rendering
+* Resource management and loading
+* Tiled support
+* Command line utility (TODO)
     * Project scaffolding
     * Profiling
     * Building Executable
-* Tiled support
-* Filesystem operations
-    * bmp, png, jpg
 
+(Some features are still under development)
 
 Modules
 ________
 
-* peachy - The core modules that contains the Engine, World, and Entity classes among others
-* peachy.audio - Contains sound classes (still under heavy maintenance)
-* peachy.fs - Short for 'filesystem', this module is used for loading and storing resources
-* peachy.geo - Geometric shapes and collision detection between them
-* peachy.graphics - Drawing and animation
-* peachy.stage - Used to load popular level editor templates
-    * Only supports tiled, but planning to add OGMO and more generic methods
-* peachy.ui - Generic user interface template
-* peachy.utils - Utility functions for camera, input, etc
+* peachy - The core modules, contains the Engine, World, and Entity classes among others.
+* peachy.audio - Contains sound classes (still under heavy maintenance).
+* peachy.collision - Multiple collision detection functions for 2d shapes.
+* peachy.fs - Short for 'filesystem', this module is used for loading and storing resources.
+* peachy.geo - Geometric shapes and collision detection between them.
+* peachy.graphics - Drawing and animation.
+* peachy.stage - Used to load popular level editor templates (only Tiled at the moment).
+* peachy.resources - Resource handling. Loading & management.
+* peachy.utils - Utility functions for camera, input, etc.
+* peachy.etc - Everything else.
 
 
 Building Docs
@@ -44,8 +41,7 @@ Building Docs
 Peachy is documented using Google Style Python Docstrings. Docs are held
 within /docs.
 
-You can check out the docs over at:
-Or build the docs yourself using Sphinx(link). They're in the /docs directory.
+You can build the docs using Sphinx.
 
 
 Running Tests
@@ -73,6 +69,7 @@ Install manually
 Resources
 _________
 Repository ~ https://github.com/shellbotx/peachy
+
 Tutorial ~ coming soon
 
 Peachy is licensed under the MIT license.

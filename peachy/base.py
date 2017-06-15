@@ -305,9 +305,6 @@ class Engine(object):
 
         running = True
         while running:
-            if self.world is not self.world:
-                self.world = self.world
-
             # Parse events
             for event in pygame.event.get():
                 if event.type == pygame.locals.QUIT:
@@ -325,14 +322,14 @@ class Engine(object):
             self.__render()
 
             # Render - Transformations
-            # TODO speed up scaling somehow
+            # TODO speed up scaling
             pygame.transform.scale(self._canvas_surface, self.window_size,
                                    self._window_surface)
 
             # Render - Finalize
             pygame.display.flip()
 
-            # Maintain fps (display if DEBUG is active)
+            # Maintain fps (display fps if DEBUG is active)
             game_timer.tick(self.fps)
             if self.debug_enabled:
                 fps = round(game_timer.get_fps())
