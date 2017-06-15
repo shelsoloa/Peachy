@@ -27,7 +27,6 @@ setup(
     classifiers=[
         'Development Status :: 4 - Beta',
         'Intended Audience :: Developers',
-        'Intended Audience :: End User/Desktop',
         'License :: OSI Approved :: MIT License',
         'Natural Language :: English',
         'Operating System :: OS Independent',
@@ -39,7 +38,6 @@ setup(
         'Topic :: Software Development :: Libraries :: Application Frameworks',
         'Topic :: Software Development :: Libraries :: pygame',
         'Topic :: Software Development :: Libraries :: Python Modules'
-        'Topic :: Software Development :: Version Control :: Git'
     ],
 
     keywords='peachy pygame gamedev game gaming development 2d graphics',
@@ -47,7 +45,6 @@ setup(
     packages=find_packages(),
     install_requires=[
         'pygame',
-        'pytmx',
-        'click'
+        'pytmx'
     ]
 )
