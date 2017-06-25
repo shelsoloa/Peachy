@@ -115,7 +115,7 @@ def collides_group(container, group, shape, collision_function=None):
     """
 
     collisions = []
-    shapes = container.get_group(group)
+    shapes = container.group(group)
 
     collision_type = None
     collision = None

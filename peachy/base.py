@@ -528,22 +528,30 @@ class Room(list):
         self.sort_required = True
         return entity
 
-    def get_group(self, *groups):
-        """Get every entity that is a member of a group.
-
-        Iterate through all entities that are members of any of the specified
-        groups.
+    def group(self, *groups):
+        """Iterate through each entity that is a member of any of the groups.
 
         Args:
             *groups(str): The groups to check for membership
 
         Returns:
-            list[peachy.Entity]: A generator that yields members of
-                the specified groups.
+            A generator that yields members of the specified groups.
         """
         for e in self:
             if e.member_of(*groups):
                 yield e
+
+    def get_group(self, *groups):
+        """Returns a list of every entity that is a member of any of the groups.
+
+        Args:
+            *groups(str): Argument list of group names to check for membership.
+        """
+        entities = []
+        for e in self:
+            if e.member_of(*groups):
+                entities.append(e)
+        return entities
 
     def get_name(self, name):
         """Get entity by name
@@ -811,6 +819,10 @@ class WorldState(object):
     def __init__(self, name, world):
         self.name = name
         self.world = world
+
+    @property
+    def room(self):
+        return self.world.room
 
     def enter(self, previous_state, *args):
         return
