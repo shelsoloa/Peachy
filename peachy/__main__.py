@@ -33,15 +33,14 @@ def cli():
 @click.option('--author', prompt='Author Name', type=str, default='')
 @click.option('--email', prompt='Author Email', type=str, default='')
 @click.option('--url', prompt='Project URL', type=str, default='')
-@click.option('--main', prompt='Main script name', type=str,
+@click.option('--entry', prompt='Entry script name', type=str,
               default='main.py')
 @click.option('--resources', prompt='Name of resource directory', type=str,
               default='res')
 @click.option('--repo', prompt='Create a git repo', type=bool, default='n')
-def createproject(name, author, email, url, main, resources, repo):
+def createproject(name, author, email, url, entry, resources, repo):
     """Create a new project."""
-    # asset_directory name
-    # Create git repo?
+    # TODO create git repo
     '''scaffold
         .gitignore
         build.py
@@ -50,7 +49,6 @@ def createproject(name, author, email, url, main, resources, repo):
         game/
             res/
             __init__.py
-            __main__.py
     '''
     package_name = name.lower().replace(' ', '_')
     package_name = click.prompt('Package Name', type=str, default=package_name)
@@ -79,19 +77,19 @@ def createproject(name, author, email, url, main, resources, repo):
         'author': author,
         'author_email': email,
         'url': url,
-        'main_entry': main,
+        'entry_script': entry,
         'resource_dir': resources
     }
     with open('config.json', 'w') as config_file:
         json.dump(config_data, config_file, indent=2)
 
     # Create project files
-    create_empty_file(main)
+    create_empty_file(entry)
     create_empty_file(os.path.join(project_dir, '__init__.py'))
     with open(os.path.join(resource_dir, 'outline.json'), 'w') as res_outline:
         json.dump({'resources': [], 'bundles': []}, res_outline, indent=2)
 
-    print('Project created!')
+    click.echo('Project created!')
 
 
 if __name__ == '__main__':
