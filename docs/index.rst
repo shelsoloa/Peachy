@@ -7,7 +7,7 @@ Peachy
 
 Welcome to the peachy framework!
 .. pull-quote ::
-    Peachy is a game developement framework for python
+    Peachy is a game developement framework for building 2D games with Python.
 
 Welcome to Peachy! This is the documentation for Peachy 0.1
 

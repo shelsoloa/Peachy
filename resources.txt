@@ -1,0 +1,27 @@
+﻿ResourceTypes
+. image, font, sound, animation
+
+ResourceManager
+. use_directory()
+
+■ bind_outline(resources_file_path)
+. unmount_resources_file()
+■ clear()
+
+. add_bundle(ResourceBundle)
+■ activate_bundle(bundle_name)
+■ deactivate_bundle(bundle_name)
+
+■ load_resource(name, path, type, **kwargs)
+■ get_resource
+■ get_resource_by_name
+■ get_resource_by_path
+
+ResourceBundle
+■ name
+■ resources
+
+Resource
+■ name
+■ data
+■ path

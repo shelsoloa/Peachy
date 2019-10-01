@@ -1,0 +1,7 @@
+_pipeline_update:
+  update()
+  update_room()
+
+_pipeline_render
+  render()
+  render_room()

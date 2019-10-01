@@ -1,0 +1,138 @@
+ZEN
+    Beautiful is better than ugly.
+    Explicit is better than implicit.
+    Simple is better than complex.
+    Complex is better than complicated.
+    Flat is better than nested.
+    Sparse is better than dense.
+    Readability counts.
+    Special cases aren't special enough to break the rules.
+    Although practicality beats purity.
+    Errors should never pass silently.
+    Unless explicitly silenced.
+    In the face of ambiguity, refuse the temptation to guess.
+    There should be one-- and preferably only one --obvious way to do it.
+    Although that way may not be obvious at first unless you're Dutch.
+    Now is better than never.
+    Although never is often better than *right* now.
+    If the implementation is hard to explain, it's a bad idea.
+    If the implementation is easy to explain, it may be a good idea.
+    Namespaces are one honking great idea -- let's do more of those!
+
+RELEASE_NOTE
+    Today I'm releasing Peachy. A python3 2D game framework.
+
+    Features
+        Simple architecture
+            Get your program up and running in a few lines. Create unique Worlds, Rooms, and Entities in a few more.
+        CLI utility
+            Project scaffolding
+            Profiling
+            Building Executable
+        Tiled support
+            Load tiled maps and render them without the boilerplate
+        Resource management
+            Load, Store, and Categorize your resources.
+
+    Peachy was modeled after FlashPunk and Love2D.
+
+    Anyways, please give it a look over here, pull requests encouraged!
+
+
+Can peachy be used without worrying about the inner implementation of functions?
+If not, do better design
+
+
+TODO
+    One Sentence Summary
+        "A python3 framework that makes developing 2d games peachy keen."
+    Code
+        peachy.config
+        peachy.etc.AStarGrid (possible modules?)
+    Documentation
+        Host
+            Read the Docs
+        Write
+            peachy.fs
+            peachy.graphics
+            peachy.ui
+        DOCS
+            Guide
+                Installation
+                Getting Started
+                Collision Detection
+                Rendering
+                Loading Maps
+                Resources
+                CLI
+            API
+                All
+                    # Simply includes all the others into one... Unless we
+                    # want to alphabetize
+                peachy
+                peachy.audio
+                peachy.base
+                peachy.config
+                peachy.etc
+                peachy.fs
+                peachy.geo
+                peachy.graphics
+                peachy.stage
+                peachy.ui
+                peachy.utils
+    Deploy
+        Read the Docs
+        Github
+    Market
+        Reddit
+            /r/python
+            /r/coolgithubprojects
+            /r/gamedev
+        Twitter
+            @getpy
+            @importpython
+            @pycoders
+            @pythonweekly
+            #Peachy
+        Python Weekly
+        TIGSource
+        GameDevInspo
+        irc
+        Github
+            vinta/awesome-python
+            checkcheckzz/python-github-projects
+    Future
+        PIL (Python Image Library)
+        peachy.backends
+        Tiled2D animations support
+        Resource loading
+            JSON resource list
+        Resource batches
+        Better animation
+            Spritemaps
+                Variable width, height
+                JSON animation declaration
+        Multiple backend support
+        New saving and loading functionality
+        Improved performance
+        Proper logger functionality
+        Better config
+        Audio
+        Extension support
+        Shader support
+        Variable timestep
+        Joystick support
+        Resizable window
+        Todo:
+            * Add Polygon class
+            * Better collision detection system
+
+        Todo:
+            Add support for OGMO editor and other common 2D map editors.
+        Performance
+            PyPy
+            Numpy
+            Cython
+            Profiling
+                cProfile
+                vprof

@@ -1,3 +1,11 @@
+"""Peachy CLI module
+
+This module is for the Peachy command line utility. Through this module you can
+easily setup and manage Peachy projects.
+
+This module is very early in development and only supports scaffolding,
+currently.
+"""
 import click
 import json
 import os

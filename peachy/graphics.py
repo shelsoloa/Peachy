@@ -295,11 +295,12 @@ def rotate(image, degree):
 
 
 def scale(image, scale, dest=None):
-    x, y, w, h = image.get_rect()
-    if dest is not None:
-        pygame.transform.scale(image, (w * scale, h * scale), dest)
-    else:
+    if dest is None:
+        _, _, w, h = image.get_rect()
         return pygame.transform.scale(image, (w * scale, h * scale))
+    else:
+        _, _, w, h = dest.get_rect()
+        pygame.transform.scale(image, (w * scale, h * scale), dest)
 
 
 def splice(image, frame_width, frame_height, margin_x=0, margin_y=0):

@@ -1,0 +1,24 @@
+A python 3 game development framework for easily developing and structuring 2D game development
+
+
+__enter__
+__exit__
+
+
+context Engine
+contextlib
+
+
+foobar = '{foo}{bar}'.format(foo=foo, bar=bar) # It is best
+
+
+Refactore Engine
+Add default world to engine
+
+
+Resources
+ - Add stages as resources
+ - Load stages from resources
+ - Load font independent of size
+ - Load resource from other resource
+   - IE animation source is image resource
